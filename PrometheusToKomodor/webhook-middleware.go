@@ -69,9 +69,14 @@ func main() {
 		komodorKey: os.Getenv("KOMODOR_API_KEY"),
 	}
 
+	if server.komodorKey == "" {
+		logger.Error("KOMODOR_API_KEY is not set, exiting")
+		os.Exit(1)
+	}
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", server.healthzHandler)
-	mux.HandleFunc("POST /alertmanager", server.alertmanagerHandler)
+	mux.HandleFunc("/healthz", server.healthzHandler)
+	mux.HandleFunc("/alertmanager", server.alertmanagerHandler)
 
 	listenAddr := envString("LISTEN_ADDR", defaultListenAddr)
 
@@ -215,7 +220,8 @@ func (s *Server) sendKomodorEvent(ctx context.Context, event KomodorEvent) error
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	// Ensure the response body is closed to prevent resource leaks
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		responseBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
