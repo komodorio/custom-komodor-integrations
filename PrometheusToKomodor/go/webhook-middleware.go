@@ -11,6 +11,9 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-retryablehttp"
+	"github.com/samber/lo"
 )
 
 const (
@@ -52,7 +55,7 @@ type KomodorScope struct {
 
 type Server struct {
 	logger     *slog.Logger
-	client     *http.Client
+	client     *retryablehttp.Client
 	komodorURL string
 	komodorKey string
 }
@@ -60,11 +63,14 @@ type Server struct {
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 3
+	retryClient.Logger = nil // disable retryablehttp's own logging
+	retryClient.HTTPClient.Timeout = envDuration("REQUEST_TIMEOUT", defaultRequestTimeout)
+
 	server := &Server{
-		logger: logger,
-		client: &http.Client{
-			Timeout: envDuration("REQUEST_TIMEOUT", defaultRequestTimeout),
-		},
+		logger:     logger,
+		client:     retryClient,
 		komodorURL: envString("KOMODOR_API_URL", defaultKomodorURL),
 		komodorKey: os.Getenv("KOMODOR_API_KEY"),
 	}
@@ -144,21 +150,21 @@ func buildKomodorEvent(alert AlertmanagerAlert) (KomodorEvent, error) {
 		return KomodorEvent{}, errors.New("missing required cluster label")
 	}
 
-	alertName := valueOrDefault(alert.Labels["alertname"], "AlertmanagerAlert")
-	eventType := truncate(alertName, 30)
+	alertName := lo.Ternary(strings.TrimSpace(alert.Labels["alertname"]) != "", alert.Labels["alertname"], "AlertmanagerAlert")
+	eventType := lo.Substring(alertName, 0, 30)
 
-	summary := firstNonEmpty(
+	summary, _ := lo.Find([]string{
 		alert.Annotations["summary"],
 		alert.Annotations["description"],
-		strings.ToTitle(alert.Status)+": "+alertName,
-	)
+		strings.ToTitle(alert.Status) + ": " + alertName,
+	}, func(s string) bool { return strings.TrimSpace(s) != "" })
 
-	namespace := firstNonEmpty(
+	namespace, _ := lo.Find([]string{
 		alert.Labels["namespace"],
 		alert.Labels["kubernetes_namespace"],
-	)
+	}, func(s string) bool { return strings.TrimSpace(s) != "" })
 
-	service := firstNonEmpty(
+	service, _ := lo.Find([]string{
 		alert.Labels["service"],
 		alert.Labels["service_name"],
 		alert.Labels["app"],
@@ -166,16 +172,9 @@ func buildKomodorEvent(alert AlertmanagerAlert) (KomodorEvent, error) {
 		alert.Labels["deployment"],
 		alert.Labels["statefulset"],
 		alert.Labels["daemonset"],
-	)
+	}, func(s string) bool { return strings.TrimSpace(s) != "" })
 
-	details := map[string]string{
-		"status":       alert.Status,
-		"startsAt":     alert.StartsAt,
-		"endsAt":       alert.EndsAt,
-		"generatorURL": alert.GeneratorURL,
-		"fingerprint":  alert.Fingerprint,
-	}
-
+	var details = map[string]string{}
 	for key, value := range alert.Labels {
 		details["label_"+key] = value
 	}
@@ -189,8 +188,8 @@ func buildKomodorEvent(alert AlertmanagerAlert) (KomodorEvent, error) {
 		Summary:   summary,
 		Scope: KomodorScope{
 			Clusters:      []string{cluster},
-			Namespaces:    optionalSlice(namespace),
-			ServicesNames: optionalSlice(service),
+			Namespaces:    lo.Ternary(namespace != "", []string{namespace}, nil),
+			ServicesNames: lo.Ternary(service != "", []string{service}, nil),
 		},
 		Severity: mapSeverity(alert.Labels["severity"], alert.Status),
 		Details:  details,
@@ -203,7 +202,7 @@ func (s *Server) sendKomodorEvent(ctx context.Context, event KomodorEvent) error
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(
+	req, err := retryablehttp.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
 		s.komodorURL,
@@ -220,12 +219,10 @@ func (s *Server) sendKomodorEvent(ctx context.Context, event KomodorEvent) error
 	if err != nil {
 		return err
 	}
-	// Ensure the response body is closed to prevent resource leaks
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		responseBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-
 		return errors.New("komodor api returned " + resp.Status + ": " + string(responseBody))
 	}
 
@@ -245,40 +242,6 @@ func mapSeverity(severity string, status string) string {
 	default:
 		return "information"
 	}
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return value
-		}
-	}
-
-	return ""
-}
-
-func valueOrDefault(value string, fallback string) string {
-	if strings.TrimSpace(value) == "" {
-		return fallback
-	}
-
-	return value
-}
-
-func optionalSlice(value string) []string {
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-
-	return []string{value}
-}
-
-func truncate(value string, maxLength int) string {
-	if len(value) <= maxLength {
-		return value
-	}
-
-	return value[:maxLength]
 }
 
 func envString(key string, fallback string) string {
