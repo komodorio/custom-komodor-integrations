@@ -1,0 +1,125 @@
+groups:
+  - name: kube-state-metrics
+    rules:
+    - alert: DeploymentReplicasMismatch
+      expr: (kube_deployment_spec_replicas
+            - kube_deployment_status_replicas_available) > 0
+      for: 10s
+      labels:
+        severity: warning
+      annotations:
+        summary: "Deployment not fully available"
+        description: "Deployment {{ $labels.deployment }} in {{ $labels.namespace }} has unavailable replicas."
+    - alert: DeploymentReplicasMismatch
+      expr: (kube_deployment_spec_replicas
+            - kube_deployment_status_replicas_available) > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Deployment not fully available"
+        description: "Deployment {{ $labels.deployment }} in {{ $labels.namespace }} has unavailable replicas."
+
+  - name: kube-state-metrics.rules
+    rules:
+      - alert: DeploymentGenerationMismatch
+        annotations:
+          description: Observed deployment generation does not match expected one for
+            deployment {{$labels.namespace}}/{{$labels.deployment}}
+          summary: Deployment is outdated
+        expr: kube_deployment_status_observed_generation !=
+          kube_deployment_metadata_generation
+        for: 10s
+        labels:
+          severity: warning
+      - alert: DeploymentReplicasNotUpdated
+        annotations:
+          description: Replicas are not updated and available for deployment
+            {{$labels.namespace}}/{{$labels.deployment}}
+          summary: Deployment replicas are outdated
+        expr: ((kube_deployment_status_replicas_updated !=
+          kube_deployment_spec_replicas) or
+          (kube_deployment_status_replicas_available !=
+          kube_deployment_spec_replicas)) unless (kube_deployment_spec_paused
+          == 1)
+        for: 5m
+        labels:
+          severity: warning
+      - alert: DaemonSetRolloutStuck
+        annotations:
+          description: Only {{$value}}% of desired pods scheduled and ready for daemon set
+            {{$labels.namespace}}/{{$labels.daemonset}}
+          summary: DaemonSet is missing pods
+        expr: kube_daemonset_status_number_ready /
+          kube_daemonset_status_desired_number_scheduled * 100 < 100
+        for: 5m
+        labels:
+          severity: warning
+      - alert: K8SDaemonSetsNotScheduled
+        annotations:
+          description: A number of daemonsets are not scheduled.
+          summary: Daemonsets are not scheduled correctly
+        expr: kube_daemonset_status_desired_number_scheduled -
+          kube_daemonset_status_current_number_scheduled > 0
+        for: 1m
+        labels:
+          severity: warning
+      - alert: DaemonSetsMissScheduled
+        annotations:
+          description: A number of daemonsets are running where they are not supposed to
+            run.
+          summary: Daemonsets are not scheduled correctly
+        expr: kube_daemonset_status_number_misscheduled > 0
+        for: 1m
+        labels:
+          severity: warning
+      - alert: PodFrequentlyRestarting
+        annotations:
+          description: Pod {{$labels.namespace}}/{{$labels.pod}} has restarted {{$value}}
+            times within the last hour
+          summary: Pod is restarting frequently
+        expr: increase(kube_pod_container_status_restarts_total[1h]) > 5
+        for: 1m
+        labels:
+          severity: warning
+
+  - name: general.rules
+    rules:
+      - alert: TargetDown
+        annotations:
+          description: "{{ $value }}% of {{ $labels.job }} targets are down."
+          summary: Targets are down
+        expr: 100 * (count(up == 0) BY (job) / count(up) BY (job)) > 10
+        for: 1m
+        labels:
+          severity: warning
+      - alert: DeadMansSwitch
+        annotations:
+          description: This is a DeadMansSwitch meant to ensure that the entire Alerting
+            pipeline is functional.
+          summary: Alerting DeadMansSwitch
+        expr: vector(1)
+        labels:
+          severity: none
+      - expr: process_open_fds / process_max_fds
+        record: fd_utilization
+      - alert: FdExhaustionClose
+        annotations:
+          description: "{{ $labels.job }}: {{ $labels.namespace }}/{{ $labels.pod }}
+            instance will exhaust in file/socket descriptors within the next 4
+            hours"
+          summary: file descriptors soon exhausted
+        expr: predict_linear(fd_utilization[1h], 3600 * 4) > 1
+        for: 1m
+        labels:
+          severity: warning
+      - alert: FdExhaustionClose
+        annotations:
+          description: "{{ $labels.job }}: {{ $labels.namespace }}/{{ $labels.pod }}
+            instance will exhaust in file/socket descriptors within the next
+            hour"
+          summary: file descriptors soon exhausted
+        expr: predict_linear(fd_utilization[10m], 3600) > 1
+        for: 1m
+        labels:
+          severity: critical

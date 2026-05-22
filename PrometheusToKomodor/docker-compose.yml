@@ -1,0 +1,83 @@
+
+services:
+  prometheus:
+    develop:
+      watch:
+        - action: restart
+          path: ./prometheus.yml
+        - action: restart
+          path: ./alert.rules.yml
+    image:  prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - '9090:9090'
+    networks:
+      - alertnet
+
+  alertmanager-new:
+    develop:
+      watch:
+        - action: restart
+          path: ./native-config.yaml
+    depends_on:
+      - prometheus
+    image: prom/alertmanager:v0.32.1
+    env_file:
+      - .env
+    volumes:
+      - ./native-config.yaml:/etc/alertmanager/alertmanager.yml
+      - ./.env:/etc/alertmanager/secrets/komodor-api-key:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - '9093:9093'
+    networks:
+      - alertnet
+
+  alertmanager-old:
+    develop:
+      watch:
+        - action: restart
+          path: ./middleware-config.yaml
+    depends_on:
+      - prometheus
+    image: prom/alertmanager:v0.22.0
+    volumes:
+      - ./middleware-config.yaml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - '9094:9093'
+    networks:
+      - alertnet
+
+  middleware:
+    develop:
+      watch:
+        - action: rebuild
+          path: ./go/
+    depends_on:
+      - alertmanager-new
+      - alertmanager-old
+    build:
+      context: ./go
+    env_file:
+      - .env
+    environment:
+      - PORT=8181
+    ports:
+      - '8181:8181'
+    networks:
+      - alertnet
+
+networks:
+  alertnet:
+    driver: bridge
+
+volumes:
+  prometheus_data: {}

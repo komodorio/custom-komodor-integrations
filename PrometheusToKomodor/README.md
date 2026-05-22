@@ -2,7 +2,7 @@
 
 This repository provides two supported ways to send Alertmanager alerts to Komodor as Custom Events:
 
-1. **Native Alertmanager webhook** — Alertmanager sends directly to the Komodor API.
+1. **Native Alertmanager webhook** — Alertmanager sends directly to the Komodor API. (Requires Alertmanager 0.32.0 and above)
 2. **Service-backed webhook middleware** — Alertmanager sends to a small middleware service, which then sends events to Komodor.
 
 Both approaches create Komodor Custom Events using the `/mgmt/v1/events` API endpoint.

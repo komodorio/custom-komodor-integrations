@@ -41,7 +41,7 @@ receivers:
 
   - name: komodor-adapter
     webhook_configs:
-      - url: http://alertmanager-komodor-adapter.monitoring.svc.cluster.local:8080/alertmanager
+      - url: http://middleware:8080/alertmanager
         send_resolved: true
         max_alerts: 1
 

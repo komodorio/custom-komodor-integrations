@@ -1,6 +1,11 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/go-jose/go-jose/v4/testutils/assert"
+	"github.com/go-jose/go-jose/v4/testutils/require"
+)
 
 func TestBuildKomodorEventMissingCluster(t *testing.T) {
 	alert := AlertmanagerAlert{
@@ -11,9 +16,29 @@ func TestBuildKomodorEventMissingCluster(t *testing.T) {
 	}
 
 	_, err := buildKomodorEvent(alert)
-	if err == nil {
-		t.Fatal("expected error when cluster label is missing")
+	assert.Error(t, err)
+}
+
+func TestBuildKomodorEventConflictingLabelAnnotations(t *testing.T) {
+	alert := AlertmanagerAlert{
+		Status: "firing",
+		Labels: map[string]string{
+			"alertname": "HighErrorRate",
+			"cluster":   "prod-eks-01",
+			"severity":  "critical",
+		},
+		Annotations: map[string]string{
+			"cluster":     "annotation-cluster-value",
+			"severity":    "warning", // This should not overwrite the label value.
+			"description": "Errors are above 5%",
+		},
 	}
+
+	event, err := buildKomodorEvent(alert)
+	require.NoError(t, err)
+
+	assert.Equal(t, event.Details["cluster"], alert.Labels["cluster"])
+	assert.Equal(t, event.Details["annotation_cluster"], alert.Annotations["cluster"])
 }
 
 func TestBuildKomodorEventMapsExpectedFields(t *testing.T) {
@@ -36,41 +61,30 @@ func TestBuildKomodorEventMapsExpectedFields(t *testing.T) {
 	}
 
 	event, err := buildKomodorEvent(alert)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if event.EventType != "VeryLongAlertNameThatShouldBeT" {
-		t.Fatalf("unexpected event type: %q", event.EventType)
-	}
+	assert.Equal(t, event.EventType, "VeryLongAlertNameThatShouldBeT")
 
-	if event.Summary != "checkout api is reporting elevated errors" {
-		t.Fatalf("unexpected summary: %q", event.Summary)
-	}
+	// if event.EventType != "VeryLongAlertNameThatShouldBeT" {
+	// 	t.Fatalf("unexpected event type: %q", event.EventType)
+	// }
+	assert.Equal(t, event.Summary, "checkout api is reporting elevated errors")
+	assert.Equal(t, event.Severity, "warning")
 
-	if event.Severity != "warning" {
-		t.Fatalf("unexpected severity: %q", event.Severity)
-	}
+	// Scope
+	assert.Len(t, event.Scope.Clusters, 1)
+	assert.Len(t, event.Scope.Namespaces, 1)
+	assert.Len(t, event.Scope.ServicesNames, 1)
+	assert.Equal(t, event.Scope.Clusters[0], "prod-eks-01")
+	assert.Equal(t, event.Scope.Namespaces[0], "payments")
+	assert.Equal(t, event.Scope.ServicesNames[0], "checkout-api")
 
-	if len(event.Scope.Clusters) != 1 || event.Scope.Clusters[0] != "prod-eks-01" {
-		t.Fatalf("unexpected clusters scope: %#v", event.Scope.Clusters)
-	}
-
-	if len(event.Scope.Namespaces) != 1 || event.Scope.Namespaces[0] != "payments" {
-		t.Fatalf("unexpected namespaces scope: %#v", event.Scope.Namespaces)
-	}
-
-	if len(event.Scope.ServicesNames) != 1 || event.Scope.ServicesNames[0] != "checkout-api" {
-		t.Fatalf("unexpected services scope: %#v", event.Scope.ServicesNames)
-	}
-
-	if event.Details["label_cluster"] != "prod-eks-01" {
-		t.Fatalf("expected label_cluster in details, got: %#v", event.Details)
-	}
-
-	if event.Details["annotation_description"] != "checkout api is reporting elevated errors" {
-		t.Fatalf("expected annotation_description in details, got: %#v", event.Details)
-	}
+	assert.Equal(t, event.Details["cluster"], "prod-eks-01")
+	assert.Equal(t, event.Details["description"], "checkout api is reporting elevated errors")
+	assert.Equal(t, event.Details["generator_url"], "http://prometheus.example/graph")
+	assert.Equal(t, event.Details["starts_at"], "08 May 26 12:00 UTC")
+	assert.Equal(t, event.Details["ends_at"], "08 May 26 12:10 UTC")
+	assert.Equal(t, event.Details["fingerprint"], "abc123")
 }
 
 func TestMapSeverity(t *testing.T) {

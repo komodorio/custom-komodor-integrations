@@ -174,13 +174,36 @@ func buildKomodorEvent(alert AlertmanagerAlert) (KomodorEvent, error) {
 		alert.Labels["daemonset"],
 	}, func(s string) bool { return strings.TrimSpace(s) != "" })
 
-	var details = map[string]string{}
-	for key, value := range alert.Labels {
-		details["label_"+key] = value
+	// Start building the details map with some standard fields.
+	var details = map[string]string{
+		"status":      alert.Status,
+		"fingerprint": alert.Fingerprint,
 	}
 
+	//  generator URL, endsAt and startsAt if available.
+	if alert.GeneratorURL != "" {
+		details["generator_url"] = alert.GeneratorURL
+	}
+	startsAt, err := time.Parse(time.RFC3339, alert.StartsAt)
+	if err == nil {
+		details["starts_at"] = startsAt.Format(time.RFC822)
+	}
+	endsAt, err := time.Parse(time.RFC3339, alert.EndsAt)
+	if err == nil {
+		details["ends_at"] = endsAt.Format(time.RFC822)
+	}
+
+	// Take the labels as the first source of details.
+	for key, value := range alert.Labels {
+		details[key] = value
+	}
+
+	// then add annotations with "annotation_" prefix.
 	for key, value := range alert.Annotations {
-		details["annotation_"+key] = value
+		if _, exists := details[key]; exists {
+			key = "annotation_" + key
+		}
+		details[key] = value
 	}
 
 	return KomodorEvent{

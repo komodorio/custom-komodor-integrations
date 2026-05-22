@@ -52,11 +52,11 @@ receivers:
         http_config:
           http_headers:
             x-api-key:
-              files:
-                - /etc/alertmanager/secrets/komodor-api-key
+              secrets:
+                - "b7ed75ac-02dc-49aa-b5e1-277fd98b18fb" # REMOVE THIS
 
         payload:
-          eventType: '{{ (index .Alerts 0).Labels.alertname | trunc 30 }}'
+          eventType: '{{ (index .Alerts 0).Labels.alertname }}'
           summary: '{{ or (index .Alerts 0).Annotations.summary (index .Alerts 0).Annotations.description (printf "%s: %s" (index .Alerts 0).Status (index .Alerts 0).Labels.alertname) }}'
           severity: '{{ if eq (index .Alerts 0).Status "resolved" }}information{{ else if or (eq (index .Alerts 0).Labels.severity "critical") (eq (index .Alerts 0).Labels.severity "error") (eq (index .Alerts 0).Labels.severity "page") }}error{{ else if or (eq (index .Alerts 0).Labels.severity "warning") (eq (index .Alerts 0).Labels.severity "warn") }}warning{{ else }}information{{ end }}'
           scope:

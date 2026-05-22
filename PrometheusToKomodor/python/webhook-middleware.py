@@ -105,9 +105,11 @@ def build_event(alert: dict[str, Any]) -> KomodorEvent | None:
         "endsAt": str(alert.get("endsAt", "")),
         "generatorURL": str(alert.get("generatorURL", "")),
         "fingerprint": str(alert.get("fingerprint", "")),
-        **{f"label_{key}": str(value) for key, value in labels.items()},
-        **{f"annotation_{key}": str(value) for key, value in annotations.items()},
+        **{f"{key}": str(value) for key, value in labels.items()},
     }
+    # We want annotations to be included, but we want labels to take precedence in case of key conflicts.
+    # so we add annotations after labels with a prefix (if needed).
+    [details.update({f"annotation_{key}" if key in details else key: str(value)}) for key, value in annotations.items()]
 
     return KomodorEvent(
         eventType=event_type,
