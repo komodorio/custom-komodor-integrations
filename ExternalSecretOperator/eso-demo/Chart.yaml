@@ -1,0 +1,6 @@
+apiVersion: v2
+name: eso-demo
+description: Quick demo chart for External Secrets Operator
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

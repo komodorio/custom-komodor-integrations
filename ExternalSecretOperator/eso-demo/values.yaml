@@ -1,0 +1,13 @@
+secretStore:
+  name: demo-secret-store
+
+externalSecret:
+  name: demo-komodor-agent-secret
+  refreshInterval: 30s
+
+targetSecret:
+  name: komodor-agent-api-key
+
+fakeSecret:
+  key: /demo/komodor
+  apiKey: ouGhah9ong5geemuNg7OoShoe0Seef9Quaw9Reeghoejoo5kei5Sohshei1Ohhei
