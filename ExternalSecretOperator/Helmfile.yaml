@@ -1,0 +1,34 @@
+repositories:
+  - name: external-secrets
+    url: https://charts.external-secrets.io
+
+  - name: komodorio
+    url: https://helm-charts.komodor.io
+
+releases:
+  - name: external-secrets
+    namespace: external-secrets
+    chart: external-secrets/external-secrets
+    createNamespace: true
+    values:
+      - installCRDs: true
+
+  - name: eso-demo
+    namespace: komodor
+    chart: ./charts/eso-demo
+    createNamespace: true
+    needs:
+      - external-secrets/external-secrets
+    values:
+      - ./charts/eso-demo/values.yaml
+
+  - name: komodor-agent
+    namespace: komodor
+    chart: komodorio/komodor-agent
+    createNamespace: true
+    needs:
+      - komodor/eso-demo
+    values:
+      - clusterName: eso-demo-cluster
+        # Existing Kubernetes Secret created by ESO
+        apiKeySecret: komodor-agent-api-key
