@@ -1,0 +1,16 @@
+FROM golang:1.25-alpine AS build
+WORKDIR /src
+COPY go.mod ./
+COPY go.sum ./
+COPY *.go ./
+COPY cmd/aws-secret-init ./cmd/aws-secret-init
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /webhook-komodor-rca .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /aws-secret-init ./cmd/aws-secret-init
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
+COPY --from=build /webhook-komodor-rca /webhook-komodor-rca
+COPY --from=build /aws-secret-init /aws-secret-init
+ENV AWS_LWA_PORT=8080
+ENV AWS_LWA_READINESS_CHECK_PATH=/healthz
+ENTRYPOINT ["/aws-secret-init", "/webhook-komodor-rca"]

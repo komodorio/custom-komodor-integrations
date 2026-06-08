@@ -1,0 +1,5 @@
+.terraform/
+darwin_arm64/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
