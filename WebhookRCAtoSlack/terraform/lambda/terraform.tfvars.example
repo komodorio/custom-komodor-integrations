@@ -1,0 +1,17 @@
+region              = "eu-west-2"
+container_image_uri = "123456789012.dkr.ecr.eu-west-2.amazonaws.com/webhook-komodor-rca:latest"
+log_level           = "info"
+
+# These Secrets Manager secrets must already exist.
+komodor_api_key_secret_id   = "komodor-api-key"
+slack_webhook_uri_secret_id = "slack-webhook-uri"
+
+# Bot mode posts the alert/session as a parent message and RCA details in its
+# thread. The bot token secret must exist.
+slack_delivery_mode       = "bot"
+slack_bot_token_secret_id = "slack-bot-token"
+slack_channel_id           = "C0123456789"
+
+# Generated ephemerally by default. Set generate_webhook_token=false to use an
+# existing secret with this name. Increment webhook_token_generation to rotate it.
+webhook_token_secret_id = "rca-webhook-token"

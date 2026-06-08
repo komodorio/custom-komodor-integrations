@@ -1,0 +1,18 @@
+project_id      = "my-gcp-project"
+region          = "europe-west2"
+container_image = "europe-west2-docker.pkg.dev/my-gcp-project/apps/webhook-komodor-rca:latest"
+log_level       = "info"
+
+# These secrets must already exist and contain at least one enabled version.
+komodor_api_key_secret_id = "komodor-api-key"
+slack_webhook_uri_secret_id = "slack-webhook-uri"
+
+# Bot mode posts the alert/session as a parent message and RCA details in its
+# thread. The bot token secret must exist and have a version.
+slack_delivery_mode      = "bot"
+slack_bot_token_secret_id = "slack-bot-token"
+slack_channel_id          = "C0123456789"
+
+# Generated ephemerally by default. Set generate_webhook_token=false to use an
+# existing secret with this ID. Increment webhook_token_generation to rotate it.
+webhook_token_secret_id = "rca-webhook-token"
