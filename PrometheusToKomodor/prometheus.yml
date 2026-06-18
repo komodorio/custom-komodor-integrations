@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 10s
+  external_labels:
+    cluster: sophos-cert-manager-loadtest
+
+
+scrape_configs:
+  - job_name: 'kube-state-metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+
+alerting:
+  alert_relabel_configs:
+    - source_labels: [deployment, daemonset, statefulset, cronjob,container]
+      separator: ""
+      regex: "(.+)"
+      target_label: service
+      replacement: "$1"
+      action: replace
+
+  alertmanagers:
+    - static_configs:
+        # - targets: ['alertmanager-new:9093', 'alertmanager-old:9093']
+        - targets: ['alertmanager-new:9093']
+        - targets: ['alertmanager-custom-payload:9093']
+
+rule_files:
+  - 'alert.rules.yml'

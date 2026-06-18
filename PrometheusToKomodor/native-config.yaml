@@ -1,0 +1,90 @@
+# Native Alertmanager -> Komodor Custom Events
+#
+# Contract:
+# - Alerts sent to this receiver MUST include labels.cluster.
+# - labels.namespace and labels.service are optional but strongly recommended.
+# - max_alerts: 1 keeps each Komodor event mapped to a single Alertmanager alert.
+#
+# Requires an Alertmanager version that supports:
+# - webhook_configs[].payload
+# - webhook_configs[].max_alerts
+# - http_config.http_headers
+
+---
+global:
+  resolve_timeout: 5m
+
+templates:
+  - /etc/alertmanager/templates/*.tmpl
+
+route:
+  receiver: default
+  group_by:
+    - alertname
+    - cluster
+    - namespace
+    - service
+
+  routes:
+    - receiver: komodor
+      matchers:
+        - cluster=~".+"
+      group_by:
+        - alertname
+        - cluster
+        - namespace
+        - service
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 4h
+      continue: true
+
+receivers:
+  - name: default
+
+  - name: komodor
+    webhook_configs:
+      - url: "https://app.komodor.com/prometheus-alert-manager/event/e80a84ed-42fc-4d31-9438-4f07dfdf04c8"
+        send_resolved: true
+        max_alerts: 1
+        timeout: 10s
+
+        # payload:
+        #   eventType: '{{ (index .Alerts 0).Labels.alertname }}'
+        #   summary: '{{ or (index .Alerts 0).Annotations.summary (index .Alerts 0).Annotations.description (printf "%s: %s" (index .Alerts 0).Status (index .Alerts 0).Labels.alertname) }}'
+        #   severity: '{{ if eq (index .Alerts 0).Status "resolved" }}information{{ else if or (eq (index .Alerts 0).Labels.severity "critical") (eq (index .Alerts 0).Labels.severity "error") (eq (index .Alerts 0).Labels.severity "page") }}error{{ else if or (eq (index .Alerts 0).Labels.severity "warning") (eq (index .Alerts 0).Labels.severity "warn") }}warning{{ else }}information{{ end }}'
+        #   scope:
+        #     clusters:
+        #       - '{{ (index .Alerts 0).Labels.cluster }}'
+        #     namespaces:
+        #       - '{{ (index .Alerts 0).Labels.namespace }}'
+        #     servicesNames:
+        #       - '{{ or (index .Alerts 0).Labels.service (index .Alerts 0).Labels.app (index .Alerts 0).Labels.deployment (index .Alerts 0).Labels.statefulset (index .Alerts 0).Labels.daemonset }}'
+        #   details:
+        #     status: '{{ (index .Alerts 0).Status }}'
+        #     alertname: '{{ (index .Alerts 0).Labels.alertname }}'
+        #     cluster: '{{ (index .Alerts 0).Labels.cluster }}'
+        #     namespace: '{{ (index .Alerts 0).Labels.namespace }}'
+        #     service: '{{ (index .Alerts 0).Labels.service }}'
+        #     severity: '{{ (index .Alerts 0).Labels.severity }}'
+        #     instance: '{{ (index .Alerts 0).Labels.instance }}'
+        #     pod: '{{ (index .Alerts 0).Labels.pod }}'
+        #     job: '{{ (index .Alerts 0).Labels.job }}'
+        #     fingerprint: '{{ (index .Alerts 0).Fingerprint }}'
+        #     startsAt: '{{ (index .Alerts 0).StartsAt }}'
+        #     endsAt: '{{ (index .Alerts 0).EndsAt }}'
+        #     generatorURL: '{{ (index .Alerts 0).GeneratorURL }}'
+
+# Example Prometheus external_labels configuration:
+#
+# global:
+#   external_labels:
+#     cluster: prod-eks-01
+
+# Alternative if you cannot mount the API key as a file:
+#
+# http_config:
+#   http_headers:
+#     x-api-key:
+#       secrets:
+#         - "<KOMODOR_API_KEY>"
