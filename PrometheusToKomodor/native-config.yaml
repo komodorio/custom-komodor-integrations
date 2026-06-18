@@ -26,7 +26,7 @@ route:
     - service
 
   routes:
-    - receiver: komodor-custom-events
+    - receiver: komodor
       matchers:
         - cluster=~".+"
       group_by:
@@ -42,44 +42,38 @@ route:
 receivers:
   - name: default
 
-  - name: komodor-custom-events
+  - name: komodor
     webhook_configs:
-      - url: https://api.komodor.com/mgmt/v1/events
+      - url: "https://app.komodor.com/prometheus-alert-manager/event/e80a84ed-42fc-4d31-9438-4f07dfdf04c8"
         send_resolved: true
         max_alerts: 1
         timeout: 10s
 
-        http_config:
-          http_headers:
-            x-api-key:
-              secrets:
-                - "b7ed75ac-02dc-49aa-b5e1-277fd98b18fb" # REMOVE THIS
-
-        payload:
-          eventType: '{{ (index .Alerts 0).Labels.alertname }}'
-          summary: '{{ or (index .Alerts 0).Annotations.summary (index .Alerts 0).Annotations.description (printf "%s: %s" (index .Alerts 0).Status (index .Alerts 0).Labels.alertname) }}'
-          severity: '{{ if eq (index .Alerts 0).Status "resolved" }}information{{ else if or (eq (index .Alerts 0).Labels.severity "critical") (eq (index .Alerts 0).Labels.severity "error") (eq (index .Alerts 0).Labels.severity "page") }}error{{ else if or (eq (index .Alerts 0).Labels.severity "warning") (eq (index .Alerts 0).Labels.severity "warn") }}warning{{ else }}information{{ end }}'
-          scope:
-            clusters:
-              - '{{ (index .Alerts 0).Labels.cluster }}'
-            namespaces:
-              - '{{ (index .Alerts 0).Labels.namespace }}'
-            servicesNames:
-              - '{{ or (index .Alerts 0).Labels.service (index .Alerts 0).Labels.app (index .Alerts 0).Labels.deployment (index .Alerts 0).Labels.statefulset (index .Alerts 0).Labels.daemonset }}'
-          details:
-            status: '{{ (index .Alerts 0).Status }}'
-            alertname: '{{ (index .Alerts 0).Labels.alertname }}'
-            cluster: '{{ (index .Alerts 0).Labels.cluster }}'
-            namespace: '{{ (index .Alerts 0).Labels.namespace }}'
-            service: '{{ (index .Alerts 0).Labels.service }}'
-            severity: '{{ (index .Alerts 0).Labels.severity }}'
-            instance: '{{ (index .Alerts 0).Labels.instance }}'
-            pod: '{{ (index .Alerts 0).Labels.pod }}'
-            job: '{{ (index .Alerts 0).Labels.job }}'
-            fingerprint: '{{ (index .Alerts 0).Fingerprint }}'
-            startsAt: '{{ (index .Alerts 0).StartsAt }}'
-            endsAt: '{{ (index .Alerts 0).EndsAt }}'
-            generatorURL: '{{ (index .Alerts 0).GeneratorURL }}'
+        # payload:
+        #   eventType: '{{ (index .Alerts 0).Labels.alertname }}'
+        #   summary: '{{ or (index .Alerts 0).Annotations.summary (index .Alerts 0).Annotations.description (printf "%s: %s" (index .Alerts 0).Status (index .Alerts 0).Labels.alertname) }}'
+        #   severity: '{{ if eq (index .Alerts 0).Status "resolved" }}information{{ else if or (eq (index .Alerts 0).Labels.severity "critical") (eq (index .Alerts 0).Labels.severity "error") (eq (index .Alerts 0).Labels.severity "page") }}error{{ else if or (eq (index .Alerts 0).Labels.severity "warning") (eq (index .Alerts 0).Labels.severity "warn") }}warning{{ else }}information{{ end }}'
+        #   scope:
+        #     clusters:
+        #       - '{{ (index .Alerts 0).Labels.cluster }}'
+        #     namespaces:
+        #       - '{{ (index .Alerts 0).Labels.namespace }}'
+        #     servicesNames:
+        #       - '{{ or (index .Alerts 0).Labels.service (index .Alerts 0).Labels.app (index .Alerts 0).Labels.deployment (index .Alerts 0).Labels.statefulset (index .Alerts 0).Labels.daemonset }}'
+        #   details:
+        #     status: '{{ (index .Alerts 0).Status }}'
+        #     alertname: '{{ (index .Alerts 0).Labels.alertname }}'
+        #     cluster: '{{ (index .Alerts 0).Labels.cluster }}'
+        #     namespace: '{{ (index .Alerts 0).Labels.namespace }}'
+        #     service: '{{ (index .Alerts 0).Labels.service }}'
+        #     severity: '{{ (index .Alerts 0).Labels.severity }}'
+        #     instance: '{{ (index .Alerts 0).Labels.instance }}'
+        #     pod: '{{ (index .Alerts 0).Labels.pod }}'
+        #     job: '{{ (index .Alerts 0).Labels.job }}'
+        #     fingerprint: '{{ (index .Alerts 0).Fingerprint }}'
+        #     startsAt: '{{ (index .Alerts 0).StartsAt }}'
+        #     endsAt: '{{ (index .Alerts 0).EndsAt }}'
+        #     generatorURL: '{{ (index .Alerts 0).GeneratorURL }}'
 
 # Example Prometheus external_labels configuration:
 #

@@ -14,6 +14,7 @@ services:
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
     ports:
       - '9090:9090'
     networks:
@@ -23,57 +24,79 @@ services:
     develop:
       watch:
         - action: restart
-          path: ./native-config.yaml
+          path: ./native-custom-config.yaml
     depends_on:
       - prometheus
     image: prom/alertmanager:v0.32.1
     env_file:
       - .env
     volumes:
-      - ./native-config.yaml:/etc/alertmanager/alertmanager.yml
+      - ./native-custom-config.yaml:/etc/alertmanager/alertmanager.yml:ro
       - ./.env:/etc/alertmanager/secrets/komodor-api-key:ro
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--log.level=debug'
+    ports:
+      - '9097:9093'
+    networks:
+      - alertnet
+
+  alertmanager-custom-payload:
+    develop:
+      watch:
+        - action: restart
+          path: ./native-custom-config.yaml
+    depends_on:
+      - prometheus
+    image: prom/alertmanager:v0.32.1
+    env_file:
+      - .env
+    volumes:
+      - ./native-custom-config.yaml:/etc/alertmanager/alertmanager.yml:ro
+      - ./.env:/etc/alertmanager/secrets/komodor-api-key:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--log.level=debug'
     ports:
       - '9093:9093'
     networks:
       - alertnet
 
-  alertmanager-old:
-    develop:
-      watch:
-        - action: restart
-          path: ./middleware-config.yaml
-    depends_on:
-      - prometheus
-    image: prom/alertmanager:v0.22.0
-    volumes:
-      - ./middleware-config.yaml:/etc/alertmanager/alertmanager.yml
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-    ports:
-      - '9094:9093'
-    networks:
-      - alertnet
+  # alertmanager-old:
+  #   develop:
+  #     watch:
+  #       - action: restart
+  #         path: ./middleware-config.yaml
+  #   depends_on:
+  #     - prometheus
+  #   image: prom/alertmanager:v0.22.0
+  #   volumes:
+  #     - ./middleware-config.yaml:/etc/alertmanager/alertmanager.yml
+  #   command:
+  #     - '--config.file=/etc/alertmanager/alertmanager.yml'
+  #   ports:
+  #     - '9094:9093'
+  #   networks:
+  #     - alertnet
 
-  middleware:
-    develop:
-      watch:
-        - action: rebuild
-          path: ./go/
-    depends_on:
-      - alertmanager-new
-      - alertmanager-old
-    build:
-      context: ./go
-    env_file:
-      - .env
-    environment:
-      - PORT=8181
-    ports:
-      - '8181:8181'
-    networks:
-      - alertnet
+  # middleware:
+  #   develop:
+  #     watch:
+  #       - action: rebuild
+  #         path: ./go/
+  #   depends_on:
+  #     - alertmanager-new
+  #     - alertmanager-old
+  #   build:
+  #     context: ./go
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - PORT=8181
+  #   ports:
+  #     - '8181:8181'
+  #   networks:
+  #     - alertnet
 
 networks:
   alertnet:
