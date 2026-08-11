@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acme Demo RBAC Sync - Executive Report</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --info: #0891b2;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            padding: 3rem 2rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+        
+        header .subtitle {
+            opacity: 0.9;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        header .meta {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+        }
+        
+        .stat-card.primary .value { color: var(--primary); }
+        .stat-card.success .value { color: var(--success); }
+        .stat-card.warning .value { color: var(--warning); }
+        .stat-card.danger .value { color: var(--danger); }
+        .stat-card.info .value { color: var(--info); }
+        .stat-card.purple .value { color: #7c3aed; }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: var(--gray-100);
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+        
+        .section-content {
+            padding: 2rem;
+        }
+        
+        .highlight-box {
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .highlight-box.info {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .highlight-box.success {
+            background: #f0fdf4;
+            border-left: 4px solid var(--success);
+        }
+        
+        .highlight-box.warning {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .highlight-box.danger {
+            background: #fef2f2;
+            border-left: 4px solid var(--danger);
+        }
+        
+        .highlight-box h3 {
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        th {
+            background: var(--gray-50);
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        tr:hover {
+            background: var(--gray-50);
+        }
+        
+        .center {
+            text-align: center;
+        }
+        
+        .highlight {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-success { background: #dcfce7; color: var(--success); }
+        .badge-warning { background: #fef3c7; color: var(--warning); }
+        .badge-danger { background: #fee2e2; color: var(--danger); }
+        .badge-info { background: #cffafe; color: var(--info); }
+        .badge-primary { background: #dbeafe; color: var(--primary); }
+        
+        .group-card, .policy-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        
+        .group-header, .policy-header {
+            background: var(--gray-50);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .group-header h3, .policy-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .group-body, .policy-body {
+            padding: 1.5rem;
+        }
+        
+        .group-details {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .detail-row {
+            margin-bottom: 1rem;
+        }
+        
+        .detail-row strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--gray-700);
+        }
+        
+        .action-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .action-tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--gray-100);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+        
+        .action-tag.add {
+            background: #dcfce7;
+            color: var(--success);
+        }
+        
+        .action-tag.remove {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+        
+        .concept-box {
+            background: var(--gray-50);
+            border-left: 4px solid var(--primary);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .concept-box h4 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .concept-box .example {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            font-family: monospace;
+        }
+        
+        .roadmap-phase {
+            border-left: 4px solid var(--primary);
+            padding-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .roadmap-phase h4 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .roadmap-phase ul {
+            margin-left: 1.5rem;
+        }
+        
+        .roadmap-phase li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .collapsible::after {
+            content: " [+]";
+            font-size: 0.85em;
+            color: var(--gray-600);
+        }
+        
+        .collapsible.expanded::after {
+            content: " [-]";
+        }
+        
+        .collapse-content {
+            display: none;
+            margin-top: 1rem;
+        }
+        
+        .collapse-content.show {
+            display: block;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-500);
+            font-size: 0.85rem;
+        }
+        
+        .cluster-rbac-section {
+            margin-bottom: 3rem;
+            padding: 1.5rem;
+            background: var(--gray-50);
+            border-radius: 8px;
+        }
+        
+        .rbac-resource-type {
+            margin-bottom: 2rem;
+        }
+        
+        .rbac-resource-type h4 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .rbac-resource-list {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .rbac-resource-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .rbac-resource-header {
+            background: var(--gray-100);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            font-size: 0.95rem;
+        }
+        
+        .rbac-resource-body {
+            padding: 1rem;
+        }
+        
+        .rbac-resource-body ul {
+            margin-top: 0.5rem;
+            margin-left: 1.5rem;
+        }
+        
+        .rbac-resource-body li {
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+            font-family: monospace;
+        }
+        
+        .expandable-section {
+            margin: 1rem 0;
+        }
+        
+        .expand-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .expand-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .expandable-content {
+            margin-top: 1rem;
+        }
+        
+        /* Tab Styles */
+        .tabs-container {
+            margin-bottom: 2rem;
+        }
+        
+        .tabs-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--gray-200);
+            margin-bottom: 2rem;
+            background: white;
+            padding: 0 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .tab-button {
+            background: transparent;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .tab-button:hover {
+            color: var(--primary);
+            background: var(--gray-50);
+        }
+        
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .expand-cluster-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .expand-cluster-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .expand-cluster-btn.expanded {
+            background: var(--success);
+        }
+        
+        .cluster-expandable-row {
+            background: var(--gray-50);
+        }
+        
+        .cluster-expandable-row td {
+            border-top: 2px solid var(--gray-300);
+        }
+        
+        .inline-cluster-report {
+            margin: 0;
+            padding: 1.5rem;
+        }
+        
+        .inline-cluster-report .summary-grid {
+            margin-bottom: 1.5rem;
+        }
+        
+        .inline-cluster-report .section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .summary-card .label {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            margin-bottom: 0.25rem;
+        }
+        
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .summary-card.success .value { color: var(--success); }
+        .summary-card.warning .value { color: var(--warning); }
+        .summary-card.danger .value { color: var(--danger); }
+        .summary-card.primary .value { color: var(--primary); }
+        
+        .policy-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        
+        .policy-card:last-child {
+            margin-bottom: 0;
+        }
+        
+        .policy-header {
+            background: var(--gray-50);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .policy-body {
+            padding: 1rem;
+        }
+        
+        .diff-section {
+            margin-top: 1rem;
+        }
+        
+        .diff-section h4 {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+        }
+        
+        .recommendations {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+        }
+        
+        .recommendations h3 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+        
+        .recommendations ol {
+            margin-left: 1.25rem;
+        }
+        
+        .recommendations li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-600);
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .section {
+                break-inside: avoid;
+            }
+            
+            .tabs-nav {
+                display: none;
+            }
+            
+            .tab-content {
+                display: block !important;
+            }
+            
+            .cluster-expandable-row {
+                display: table-row !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Acme Demo RBAC Sync - Executive Report</h1>
+            <p class="subtitle">Complete Kubernetes to Komodor Permission Analysis</p>
+            <p class="meta">
+                <strong>Account:</strong> Acme Demo &nbsp;|&nbsp;
+                <strong>Generated:</strong> 2026-08-11 09:42 &nbsp;|&nbsp;
+                <strong>Analysis ID:</strong> 2026-08-11_09-40
+            </p>
+        </header>
+        
+        <!-- Key Metrics -->
+        <div class="stats-grid">
+            <div class="stat-card purple">
+                <div class="value">2</div>
+                <div class="label">Total Clusters</div>
+            </div>
+            <div class="stat-card success">
+                <div class="value">2</div>
+                <div class="label">Successfully Analyzed</div>
+            </div>
+            <div class="stat-card primary">
+                <div class="value">6</div>
+                <div class="label">Unique Identity Groups</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="value">6</div>
+                <div class="label">Policies to Create</div>
+            </div>
+        </div>
+        
+        <!-- Tabs Navigation -->
+        <div class="tabs-container">
+            <div class="tabs-nav">
+                <button class="tab-button active" onclick="switchTab('tab-1', this)">1. Executive Summary</button>
+                <button class="tab-button" onclick="switchTab('tab-2', this)">2. Background</button>
+                <button class="tab-button" onclick="switchTab('tab-3', this)">3. K8s RBAC Concepts</button>
+                <button class="tab-button" onclick="switchTab('tab-4', this)">4. Current State</button>
+                <button class="tab-button" onclick="switchTab('tab-5', this)">5. Per-Cluster Analysis</button>
+                <button class="tab-button" onclick="switchTab('tab-6', this)">6. Identity Groups</button>
+                <button class="tab-button" onclick="switchTab('tab-7', this)">7. Policies to Create</button>
+                <button class="tab-button" onclick="switchTab('tab-8', this)">8. K8s RBAC Resources</button>
+                <button class="tab-button" onclick="switchTab('tab-9', this)">9. Permission Gaps</button>
+                <button class="tab-button" onclick="switchTab('tab-10', this)">10. Implementation</button>
+                <button class="tab-button" onclick="switchTab('tab-11', this)">11. Remaining Gaps</button>
+                <button class="tab-button" onclick="switchTab('tab-12', this)">12. Appendix</button>
+            </div>
+            
+            <!-- Tab 1: Executive Summary -->
+            <div id="tab-1" class="tab-content active">
+        <div class="section">
+            <div class="section-header">
+                <h2>Executive Summary</h2>
+            </div>
+            <div class="section-content">
+                <div class="highlight-box info">
+                    <h3>The Business Problem</h3>
+                    <p>
+                        Acme Demo manages Kubernetes RBAC through their identity provider (IdP) integration, ensuring consistent access control 
+                        across their 2 clusters. However, Komodor currently has no mapping between the IdP groups 
+                        and Komodor policies, creating a "permission drift" risk where Komodor access may not match 
+                        their actual K8s permissions.
+                    </p>
+                </div>
+                
+                <div class="highlight-box success">
+                    <h3>Key Findings</h3>
+                    <ul>
+                        <li><strong>2 clusters</strong> analyzed</li>
+                        <li><strong>6 unique identity groups</strong> discovered with K8s RBAC permissions</li>
+                        <li><strong>6 Komodor policies</strong> need to be created to match K8s RBAC</li>
+                        <li>Existing Komodor policies are generic rather than group-specific (see Current State)</li>
+                    </ul>
+                </div>
+                
+                <div class="highlight-box warning">
+                    <h3>Recommendation</h3>
+                    <p>
+                        Create 6 group-specific Komodor policies that mirror the existing K8s RBAC structure. 
+                        This will ensure users have appropriate Komodor access matching their Kubernetes permissions, 
+                        eliminating permission drift and maintaining consistency with their IAM-managed access model.
+                    </p>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 2: Background -->
+            <div id="tab-2" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Request Background</h2>
+            </div>
+            <div class="section-content">
+                <p>
+                    Acme Demo requested a "Reverse RBAC Sync" solution to address their concern about permission drift. 
+                    Instead of using Komodor as the source of truth for RBAC (which would require manual configuration), 
+                    they want Komodor to automatically read and mirror their existing Kubernetes RBAC configuration.
+                </p>
+                
+                <div class="highlight-box info">
+                    <h3>Why "Reverse RBAC Sync"?</h3>
+                    <p>
+                        Traditional RBAC sync pushes Komodor policies to Kubernetes. This approach reverses it:
+                    </p>
+                    <ul>
+                        <li><strong>Source of Truth:</strong> Kubernetes RBAC (managed via the IdP/IAM integration)</li>
+                        <li><strong>Target:</strong> Komodor policies (automatically generated from K8s)</li>
+                        <li><strong>Benefit:</strong> No manual configuration needed, always in sync with IAM</li>
+                    </ul>
+                </div>
+                
+                <div class="highlight-box success">
+                    <h3>Goal</h3>
+                    <p>
+                        Automatically align Komodor user permissions with their Kubernetes RBAC permissions, 
+                        ensuring that when users log into Komodor via SAML, they receive access that matches 
+                        their existing K8s permissions without any manual policy configuration.
+                    </p>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 3: K8s RBAC Concepts -->
+            <div id="tab-3" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Understanding Kubernetes RBAC</h2>
+            </div>
+            <div class="section-content">
+                <p style="margin-bottom: 1.5rem;">
+                    Kubernetes RBAC uses five key resource types to define and assign permissions. 
+                    Here's how they work, with illustrative examples:
+                </p>
+                
+                <div class="concept-box">
+                    <h4>ClusterRole - Permission Template</h4>
+                    <p>
+                        Defines <strong>WHAT</strong> permissions exist. A ClusterRole specifies verbs (actions like get, list, watch, create, update, delete) 
+                        and resources (like pods, deployments, secrets) that can be accessed.
+                    </p>
+                    <div class="example">
+                        Example: "platform-readonly" ClusterRole<br>
+                        - Verbs: get, list, watch (read-only)<br>
+                        - Resources: * (all resources)<br>
+                        - Result: Read-only access to everything in the cluster
+                    </div>
+                </div>
+                
+                <div class="concept-box">
+                    <h4>ClusterRoleBinding - Links Roles to Groups</h4>
+                    <p>
+                        Defines <strong>WHO</strong> has cluster-wide permissions. A ClusterRoleBinding connects a ClusterRole 
+                        to subjects (users, groups, or service accounts).
+                    </p>
+                    <div class="example">
+                        Example: ClusterRoleBinding "platform-team-binding"<br>
+                        - ClusterRole: "platform-readonly"<br>
+                        - Subject: Group "platform-team"<br>
+                        - Result: All members of the "platform-team" identity group get read-only access cluster-wide
+                    </div>
+                </div>
+                
+                <div class="concept-box">
+                    <h4>Role - Namespace-Scoped Permission Template</h4>
+                    <p>
+                        Same as ClusterRole but limited to a specific namespace. Defines permissions that only apply 
+                        within that namespace.
+                    </p>
+                    <div class="example">
+                        Example: Role "app-team-editor" in namespace "payments"<br>
+                        - Verbs: get, list, watch, create, update<br>
+                        - Resources: pods, deployments, services<br>
+                        - Result: Read/write access to pods, deployments, and services, but only in the "payments" namespace
+                    </div>
+                </div>
+                
+                <div class="concept-box">
+                    <h4>RoleBinding - Links Roles to Groups in Namespace</h4>
+                    <p>
+                        Connects a Role to subjects within a specific namespace. Users/groups get the Role's permissions 
+                        only in that namespace.
+                    </p>
+                    <div class="example">
+                        Example: RoleBinding in namespace "payments"<br>
+                        - Role: "app-team-editor"<br>
+                        - Subject: Group "app-team"<br>
+                        - Result: Members of "app-team" group can manage resources in the "payments" namespace only
+                    </div>
+                </div>
+                
+                <div class="concept-box">
+                    <h4>ServiceAccount - Machine Identities</h4>
+                    <p>
+                        Service accounts are used by pods and automation tools, not human users. They're not relevant 
+                        for mapping identity groups to Komodor policies (which is for human users).
+                    </p>
+                </div>
+                
+                <div class="highlight-box info" style="margin-top: 1.5rem;">
+                    <h3>How We Analyzed the RBAC</h3>
+                    <p>
+                        We scanned all ClusterRoleBindings and RoleBindings to find which <strong>identity groups</strong> are bound to which roles. 
+                        Then we examined the ClusterRoles and Roles to understand what permissions those groups have. 
+                        Finally, we mapped those K8s permissions to Komodor actions to generate matching policies.
+                    </p>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 4: Current State -->
+            <div id="tab-4" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Current State</h2>
+            </div>
+            <div class="section-content">
+                <h3 style="margin-bottom: 1rem;">Kubernetes RBAC Infrastructure</h3>
+                <ul style="margin-bottom: 1.5rem;">
+                    <li><strong>2 clusters</strong> analyzed across the account</li>
+                    <li><strong>6 unique identity groups</strong> with K8s access permissions</li>
+                    <li>RBAC managed via <strong>IdP/IAM integration</strong> - groups are automatically synced</li>
+                    <li>Mix of <strong>cluster-wide</strong> (ClusterRole) and <strong>namespace-scoped</strong> (Role) permissions</li>
+                </ul>
+                
+                <h3 style="margin-bottom: 1rem;">Komodor Current Configuration</h3>
+                <p style="margin-bottom: 1rem;">The account currently has only <strong>generic, non-group-specific policies</strong> in Komodor, typically the defaults:</p>
+                <ul style="margin-bottom: 1.5rem;">
+                    <li><code>default-allow-all</code> - Full admin access (all actions)</li>
+                    <li><code>default-read-only</code> - View-only access (view:all)</li>
+                    <li><code>default-basic-actions</code> - Basic operations (restart, scale, exec)</li>
+                    <li><code>default-allow-get-kubeconfig</code> - Kubeconfig download only</li>
+                </ul>
+                
+                <div class="highlight-box danger">
+                    <h3>The Gap</h3>
+                    <p>
+                        <strong>No mapping exists between identity groups and Komodor policies.</strong> This means:
+                    </p>
+                    <ul>
+                        <li>Users either get too much access (if assigned to <code>default-allow-all</code>)</li>
+                        <li>Or too little access (if assigned to restrictive defaults)</li>
+                        <li>Komodor permissions don't match their actual K8s RBAC permissions</li>
+                        <li>Permission drift occurs when K8s RBAC changes but Komodor doesn't</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 5: Per-Cluster Analysis -->
+            <div id="tab-5" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Per-Cluster Analysis</h2>
+            </div>
+            <div class="section-content" style="overflow-x: auto;">
+                <p style="margin-bottom: 1rem;">
+                    Complete breakdown of all 2 clusters analyzed:
+                </p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cluster Name</th>
+                            <th class="center">Region</th>
+                            <th class="center">ClusterRoles</th>
+                            <th class="center">ClusterRoleBindings</th>
+                            <th class="center">Roles</th>
+                            <th class="center">RoleBindings</th>
+                            <th class="center">Groups Found</th>
+                            <th class="center">Policies Needed</th>
+                            <th class="center">Report</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+        <tr>
+            <td><code>prod-east</code></td>
+            <td class="center">Unknown</td>
+            <td class="center">4</td>
+            <td class="center">4</td>
+            <td class="center">2</td>
+            <td class="center">2</td>
+            <td class="center highlight">5</td>
+            <td class="center highlight">5</td>
+            <td class="center">
+                <button class="expand-cluster-btn" onclick="toggleClusterReport('prod-east')" id="btn-prod-east">
+                    Expand
+                </button>
+            </td>
+        </tr>
+        
+        <tr>
+            <td><code>stage-east</code></td>
+            <td class="center">Unknown</td>
+            <td class="center">1</td>
+            <td class="center">1</td>
+            <td class="center">3</td>
+            <td class="center">3</td>
+            <td class="center highlight">3</td>
+            <td class="center highlight">3</td>
+            <td class="center">
+                <button class="expand-cluster-btn" onclick="toggleClusterReport('stage-east')" id="btn-stage-east">
+                    Expand
+                </button>
+            </td>
+        </tr>
+        
+                        
+        <tr id="expandable-prod-east" class="cluster-expandable-row" style="display: none;">
+            <td colspan="9" style="padding: 0;">
+                
+    <div class="inline-cluster-report" style="margin-top: 1rem; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+        <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary);">prod-east</h3>
+        
+    <div class="summary-grid">
+        <div class="summary-card primary">
+            <div class="label">K8s Policies Generated</div>
+            <div class="value">5</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Existing Komodor Policies</div>
+            <div class="value">0</div>
+        </div>
+        <div class="summary-card success">
+            <div class="label">New to Create</div>
+            <div class="value">5</div>
+        </div>
+        <div class="summary-card warning">
+            <div class="label">Need Updates</div>
+            <div class="value">0</div>
+        </div>
+    </div>
+    
+        <div class="section">
+            <div class="section-header">
+                <h2>Recommendations</h2>
+            </div>
+            <div class="section-content recommendations">
+                <ol>
+                    <li><strong>Create 5 new policies</strong> to match K8s RBAC groups. Use the generated policy files or the apply script.</li>
+<li>Run <code>python apply_komodor_policies.py</code> to apply the changes via API.</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <h2>New Policies to Create</h2>
+                <span class="badge badge-success">5</span>
+            </div>
+            <div class="section-content">
+                
+            <div class="policy-card">
+                <div class="policy-header">
+                    <span>k8s-sync-group-data-eng</span>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="action-list"><span class="action-tag add">edit:job</span><span class="action-tag add">rerun:job</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:pods</span></div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <span>k8s-sync-group-payments-team</span>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="action-list"><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:service</span><span class="action-tag add">edit:configmap</span><span class="action-tag add">edit:deployment</span><span class="action-tag add">edit:service</span><span class="action-tag add">get:deployment</span><span class="action-tag add">restart:deployment</span><span class="action-tag add">rollback:deployment</span><span class="action-tag add">scale:deployment</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:services</span></div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <span>k8s-sync-group-platform-eng</span>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="action-list"><span class="action-tag add">get:daemonset</span><span class="action-tag add">get:deployment</span><span class="action-tag add">get:statefulset</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:daemonsets</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:ingresses</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:namespaces</span><span class="action-tag add">view:nodes</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:services</span><span class="action-tag add">view:statefulsets</span></div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <span>k8s-sync-group-sre</span>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="action-list"><span class="action-tag add">delete:Keda</span><span class="action-tag add">delete:Kyverno</span><span class="action-tag add">delete:cilium</span><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:cronjob</span><span class="action-tag add">delete:custom-resource</span><span class="action-tag add">delete:daemonset</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:ingress</span><span class="action-tag add">delete:job</span><span class="action-tag add">delete:namespace</span><span class="action-tag add">delete:networkpolicy</span><span class="action-tag add">delete:persistentvolume</span><span class="action-tag add">delete:persistentvolumeclaim</span><span class="action-tag add">delete:pod</span><span class="action-tag add">delete:replicaset</span><span class="action-tag add">delete:rollout</span><span class="action-tag add">delete:secret</span><span class="action-tag add">delete:service</span><span class="action-tag add">delete:statefulset</span><span class="action-tag add">delete:storageclass</span><span class="action-tag add">edit:Keda</span><span class="action-tag add">edit:Kyverno</span><span class="action-tag add">edit:cilium</span><span class="action-tag add">edit:configmap</span><span class="action-tag add">edit:cronjob</span><span class="action-tag add">edit:custom-resource</span><span class="action-tag add">edit:daemonset</span><span class="action-tag add">edit:deployment</span><span class="action-tag add">edit:horizontalpodautoscaler</span><span class="action-tag add">edit:job</span><span class="action-tag add">edit:replicaset</span><span class="action-tag add">edit:rollout</span><span class="action-tag add">edit:secret</span><span class="action-tag add">edit:service</span><span class="action-tag add">edit:statefulset</span><span class="action-tag add">view:Keda</span><span class="action-tag add">view:Kyverno</span><span class="action-tag add">view:all</span><span class="action-tag add">view:audit</span><span class="action-tag add">view:autoscalers</span><span class="action-tag add">view:certmanager</span><span class="action-tag add">view:cilium</span><span class="action-tag add">view:clusterroles</span><span class="action-tag add">view:clusterrolesbinding</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:cost</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:custom-resource</span><span class="action-tag add">view:customresourcedefinitions</span><span class="action-tag add">view:daemonsets</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:externaldns</span><span class="action-tag add">view:gpu</span><span class="action-tag add">view:horizontalpodautoscalers</span><span class="action-tag add">view:ingresses</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:namespaces</span><span class="action-tag add">view:networkpolicies</span><span class="action-tag add">view:nodecount</span><span class="action-tag add">view:nodes</span><span class="action-tag add">view:persistentvolumeclaims</span><span class="action-tag add">view:persistentvolumes</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:replicasets</span><span class="action-tag add">view:rollouts</span><span class="action-tag add">view:secrets</span><span class="action-tag add">view:services</span><span class="action-tag add">view:statefulsets</span><span class="action-tag add">view:storageclasses</span><span class="action-tag add">view:usage</span></div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <span>k8s-sync-group-system-masters</span>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="action-list"><span class="action-tag add">delete:Keda</span><span class="action-tag add">delete:Kyverno</span><span class="action-tag add">delete:cilium</span><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:cronjob</span><span class="action-tag add">delete:custom-resource</span><span class="action-tag add">delete:daemonset</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:ingress</span><span class="action-tag add">delete:job</span><span class="action-tag add">delete:namespace</span><span class="action-tag add">delete:networkpolicy</span><span class="action-tag add">delete:persistentvolume</span><span class="action-tag add">delete:persistentvolumeclaim</span><span class="action-tag add">delete:pod</span><span class="action-tag add">delete:replicaset</span><span class="action-tag add">delete:rollout</span><span class="action-tag add">delete:secret</span><span class="action-tag add">delete:service</span><span class="action-tag add">delete:statefulset</span><span class="action-tag add">delete:storageclass</span><span class="action-tag add">edit:Keda</span><span class="action-tag add">edit:Kyverno</span><span class="action-tag add">edit:cilium</span><span class="action-tag add">edit:configmap</span><span class="action-tag add">edit:cronjob</span><span class="action-tag add">edit:custom-resource</span><span class="action-tag add">edit:daemonset</span><span class="action-tag add">edit:deployment</span><span class="action-tag add">edit:horizontalpodautoscaler</span><span class="action-tag add">edit:job</span><span class="action-tag add">edit:replicaset</span><span class="action-tag add">edit:rollout</span><span class="action-tag add">edit:secret</span><span class="action-tag add">edit:service</span><span class="action-tag add">edit:statefulset</span><span class="action-tag add">view:Keda</span><span class="action-tag add">view:Kyverno</span><span class="action-tag add">view:all</span><span class="action-tag add">view:audit</span><span class="action-tag add">view:autoscalers</span><span class="action-tag add">view:certmanager</span><span class="action-tag add">view:cilium</span><span class="action-tag add">view:clusterroles</span><span class="action-tag add">view:clusterrolesbinding</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:cost</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:custom-resource</span><span class="action-tag add">view:customresourcedefinitions</span><span class="action-tag add">view:daemonsets</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:externaldns</span><span class="action-tag add">view:gpu</span><span class="action-tag add">view:horizontalpodautoscalers</span><span class="action-tag add">view:ingresses</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:namespaces</span><span class="action-tag add">view:networkpolicies</span><span class="action-tag add">view:nodecount</span><span class="action-tag add">view:nodes</span><span class="action-tag add">view:persistentvolumeclaims</span><span class="action-tag add">view:persistentvolumes</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:replicasets</span><span class="action-tag add">view:rollouts</span><span class="action-tag add">view:secrets</span><span class="action-tag add">view:services</span><span class="action-tag add">view:statefulsets</span><span class="action-tag add">view:storageclasses</span><span class="action-tag add">view:usage</span></div>
+                </div>
+            </div>
+            
+            </div>
+        </div>
+        
+        
+        <div class="section">
+            <div class="section-header">
+                <h2>Policies Needing Updates</h2>
+                <span class="badge badge-warning">0</span>
+            </div>
+            <div class="section-content empty-state">
+                No existing policies need updates.
+            </div>
+        </div>
+        
+        
+    <div class="section">
+        <div class="section-header">
+            <h2>Action Coverage Differences</h2>
+        </div>
+        <div class="section-content">
+            <div class="diff-section">
+                <h4 class="collapsible">Actions in K8s RBAC, not in Komodor (78)</h4>
+                <div class="collapse-content">
+                    <div class="action-list" style="margin-top: 0.5rem;"><span class="action-tag add">delete:Keda</span><span class="action-tag add">delete:Kyverno</span><span class="action-tag add">delete:cilium</span><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:cronjob</span><span class="action-tag add">delete:custom-resource</span><span class="action-tag add">delete:daemonset</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:ingress</span><span class="action-tag add">delete:job</span><span class="action-tag add">delete:namespace</span><span class="action-tag add">delete:networkpolicy</span><span class="action-tag add">delete:persistentvolume</span><span class="action-tag add">delete:persistentvolumeclaim</span><span class="action-tag add">delete:pod</span><span class="action-tag add">delete:replicaset</span><span class="action-tag add">delete:rollout</span><span class="action-tag add">delete:secret</span><span class="action-tag add">delete:service</span><span class="action-tag add">delete:statefulset</span><span class="action-tag add">delete:storageclass</span><span class="action-tag add">edit:Keda</span><span class="action-tag add">edit:Kyverno</span><span class="action-tag add">edit:cilium</span><span class="action-tag add">edit:configmap</span><span class="action-tag add">edit:cronjob</span><span class="action-tag add">edit:custom-resource</span><span class="action-tag add">edit:daemonset</span><span class="action-tag add">edit:deployment</span><span class="action-tag add">edit:horizontalpodautoscaler</span><span class="action-tag add">edit:job</span><span class="action-tag add">edit:replicaset</span><span class="action-tag add">edit:rollout</span><span class="action-tag add">edit:secret</span><span class="action-tag add">edit:service</span><span class="action-tag add">edit:statefulset</span><span class="action-tag add">get:daemonset</span><span class="action-tag add">get:deployment</span><span class="action-tag add">get:statefulset</span><span class="action-tag add">rerun:job</span><span class="action-tag add">restart:deployment</span><span class="action-tag add">rollback:deployment</span><span class="action-tag add">scale:deployment</span><span class="action-tag add">view:Keda</span><span class="action-tag add">view:Kyverno</span><span class="action-tag add">view:all</span><span class="action-tag add">view:audit</span><span class="action-tag add">view:autoscalers</span><span class="action-tag add">view:certmanager</span><span class="action-tag add">view:cilium</span><span class="action-tag add">view:clusterroles</span><span class="action-tag add">view:clusterrolesbinding</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:cost</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:custom-resource</span><span class="action-tag add">view:customresourcedefinitions</span><span class="action-tag add">view:daemonsets</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:externaldns</span><span class="action-tag add">view:gpu</span><span class="action-tag add">view:horizontalpodautoscalers</span><span class="action-tag add">view:ingresses</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:namespaces</span><span class="action-tag add">view:networkpolicies</span><span class="action-tag add">view:nodecount</span><span class="action-tag add">view:nodes</span><span class="action-tag add">view:persistentvolumeclaims</span><span class="action-tag add">view:persistentvolumes</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:replicasets</span><span class="action-tag add">view:rollouts</span><span class="action-tag add">view:secrets</span><span class="action-tag add">view:services</span><span class="action-tag add">view:statefulsets</span><span class="action-tag add">view:storageclasses</span><span class="action-tag add">view:usage</span></div>
+                </div>
+            </div>
+            <div class="diff-section" style="margin-top: 1.5rem;">
+                <h4 class="collapsible">Actions in Komodor, not in K8s RBAC (0)</h4>
+                <div class="collapse-content">
+                    <div class="action-list" style="margin-top: 0.5rem;"><span class="empty-state">None</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+        
+    </div>
+    
+            </td>
+        </tr>
+        
+        <tr id="expandable-stage-east" class="cluster-expandable-row" style="display: none;">
+            <td colspan="9" style="padding: 0;">
+                
+    <div class="inline-cluster-report" style="margin-top: 1rem; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+        <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary);">stage-east</h3>
+        
+    <div class="summary-grid">
+        <div class="summary-card primary">
+            <div class="label">K8s Policies Generated</div>
+            <div class="value">3</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Existing Komodor Policies</div>
+            <div class="value">0</div>
+        </div>
+        <div class="summary-card success">
+            <div class="label">New to Create</div>
+            <div class="value">3</div>
+        </div>
+        <div class="summary-card warning">
+            <div class="label">Need Updates</div>
+            <div class="value">0</div>
+        </div>
+    </div>
+    
+        <div class="section">
+            <div class="section-header">
+                <h2>Recommendations</h2>
+            </div>
+            <div class="section-content recommendations">
+                <ol>
+                    <li><strong>Create 3 new policies</strong> to match K8s RBAC groups. Use the generated policy files or the apply script.</li>
+<li>Run <code>python apply_komodor_policies.py</code> to apply the changes via API.</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <h2>New Policies to Create</h2>
+                <span class="badge badge-success">3</span>
+            </div>
+            <div class="section-content">
+                
+            <div class="policy-card">
+                <div class="policy-header">
+                    <span>k8s-sync-group-payments-team</span>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="action-list"><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:secret</span><span class="action-tag add">delete:service</span><span class="action-tag add">edit:configmap</span><span class="action-tag add">edit:deployment</span><span class="action-tag add">edit:secret</span><span class="action-tag add">edit:service</span><span class="action-tag add">get:deployment</span><span class="action-tag add">restart:deployment</span><span class="action-tag add">rollback:deployment</span><span class="action-tag add">scale:deployment</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:secrets</span><span class="action-tag add">view:services</span></div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <span>k8s-sync-group-platform-eng</span>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="action-list"><span class="action-tag add">get:daemonset</span><span class="action-tag add">get:deployment</span><span class="action-tag add">get:statefulset</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:daemonsets</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:ingresses</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:namespaces</span><span class="action-tag add">view:nodes</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:services</span><span class="action-tag add">view:statefulsets</span></div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <span>k8s-sync-group-qa-team</span>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="action-list"><span class="action-tag add">get:deployment</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:pods</span></div>
+                </div>
+            </div>
+            
+            </div>
+        </div>
+        
+        
+        <div class="section">
+            <div class="section-header">
+                <h2>Policies Needing Updates</h2>
+                <span class="badge badge-warning">0</span>
+            </div>
+            <div class="section-content empty-state">
+                No existing policies need updates.
+            </div>
+        </div>
+        
+        
+    <div class="section">
+        <div class="section-header">
+            <h2>Action Coverage Differences</h2>
+        </div>
+        <div class="section-content">
+            <div class="diff-section">
+                <h4 class="collapsible">Actions in K8s RBAC, not in Komodor (26)</h4>
+                <div class="collapse-content">
+                    <div class="action-list" style="margin-top: 0.5rem;"><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:secret</span><span class="action-tag add">delete:service</span><span class="action-tag add">edit:configmap</span><span class="action-tag add">edit:deployment</span><span class="action-tag add">edit:secret</span><span class="action-tag add">edit:service</span><span class="action-tag add">get:daemonset</span><span class="action-tag add">get:deployment</span><span class="action-tag add">get:statefulset</span><span class="action-tag add">restart:deployment</span><span class="action-tag add">rollback:deployment</span><span class="action-tag add">scale:deployment</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:daemonsets</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:ingresses</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:namespaces</span><span class="action-tag add">view:nodes</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:secrets</span><span class="action-tag add">view:services</span><span class="action-tag add">view:statefulsets</span></div>
+                </div>
+            </div>
+            <div class="diff-section" style="margin-top: 1.5rem;">
+                <h4 class="collapsible">Actions in Komodor, not in K8s RBAC (0)</h4>
+                <div class="collapse-content">
+                    <div class="action-list" style="margin-top: 0.5rem;"><span class="empty-state">None</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+        
+    </div>
+    
+            </td>
+        </tr>
+        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 6: Identity Groups Deep Dive -->
+            <div id="tab-6" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Identity Groups Deep Dive</h2>
+            </div>
+            <div class="section-content">
+                <p style="margin-bottom: 1.5rem;">
+                    Detailed breakdown of all 6 identity groups, their K8s permissions, and mapped Komodor actions:
+                </p>
+                
+        <div class="group-card">
+            <div class="group-header">
+                <h3>data-eng</h3>
+                <span class="badge badge-primary">1 clusters</span>
+            </div>
+            <div class="group-body">
+                <div class="group-details">
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> data-pipeline-operator
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s API Groups:</strong> , batch
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Verbs:</strong> create, get, list, watch
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Resources:</strong> cronjobs, jobs, pods
+                    </div>
+                    <div class="detail-row">
+                        <strong>Scope:</strong> namespace-scoped
+                        <br><strong>Namespaces:</strong> data
+                    </div>
+                    <div class="detail-row">
+                        <strong>Komodor Actions (5):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">edit:job</span><span class="action-tag">rerun:job</span><span class="action-tag">view:cronjobs</span><span class="action-tag">view:jobs</span><span class="action-tag">view:pods</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clusters (1):</strong> prod-east
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="group-card">
+            <div class="group-header">
+                <h3>payments-team</h3>
+                <span class="badge badge-primary">2 clusters</span>
+            </div>
+            <div class="group-body">
+                <div class="group-details">
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> payments-deployer
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s API Groups:</strong> , apps
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Verbs:</strong> create, delete, get, list, patch, update, watch
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Resources:</strong> configmaps, deployments, pods, secrets, services
+                    </div>
+                    <div class="detail-row">
+                        <strong>Scope:</strong> namespace-scoped
+                        <br><strong>Namespaces:</strong> payments, payments-canary
+                    </div>
+                    <div class="detail-row">
+                        <strong>Komodor Actions (17):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">delete:configmap</span><span class="action-tag">delete:deployment</span><span class="action-tag">delete:secret</span><span class="action-tag">delete:service</span><span class="action-tag">edit:configmap</span><span class="action-tag">edit:deployment</span><span class="action-tag">edit:secret</span><span class="action-tag">edit:service</span><span class="action-tag">get:deployment</span><span class="action-tag">restart:deployment</span><span class="action-tag">rollback:deployment</span><span class="action-tag">scale:deployment</span><span class="action-tag">view:configmaps</span><span class="action-tag">view:deployments</span><span class="action-tag">view:pods</span><span class="action-tag">view:secrets</span><span class="action-tag">view:services</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clusters (2):</strong> prod-east, stage-east
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="group-card">
+            <div class="group-header">
+                <h3>platform-eng</h3>
+                <span class="badge badge-primary">2 clusters</span>
+            </div>
+            <div class="group-body">
+                <div class="group-details">
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> platform-readonly
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s API Groups:</strong> , apps, batch, networking.k8s.io
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Verbs:</strong> get, list, watch
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Resources:</strong> configmaps, cronjobs, daemonsets, deployments, ingresses, jobs, namespaces, nodes, pods, services, statefulsets
+                    </div>
+                    <div class="detail-row">
+                        <strong>Scope:</strong> cluster-wide
+                        <br><strong>Namespaces:</strong> * (cluster-wide)
+                    </div>
+                    <div class="detail-row">
+                        <strong>Komodor Actions (14):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">get:daemonset</span><span class="action-tag">get:deployment</span><span class="action-tag">get:statefulset</span><span class="action-tag">view:configmaps</span><span class="action-tag">view:cronjobs</span><span class="action-tag">view:daemonsets</span><span class="action-tag">view:deployments</span><span class="action-tag">view:ingresses</span><span class="action-tag">view:jobs</span><span class="action-tag">view:namespaces</span><span class="action-tag">view:nodes</span><span class="action-tag">view:pods</span><span class="action-tag">view:services</span><span class="action-tag">view:statefulsets</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clusters (2):</strong> prod-east, stage-east
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="group-card">
+            <div class="group-header">
+                <h3>qa-team</h3>
+                <span class="badge badge-primary">1 clusters</span>
+            </div>
+            <div class="group-body">
+                <div class="group-details">
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> qa-viewer
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s API Groups:</strong> , apps, batch
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Verbs:</strong> get, list, watch
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Resources:</strong> deployments, jobs, pods
+                    </div>
+                    <div class="detail-row">
+                        <strong>Scope:</strong> namespace-scoped
+                        <br><strong>Namespaces:</strong> qa
+                    </div>
+                    <div class="detail-row">
+                        <strong>Komodor Actions (4):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">get:deployment</span><span class="action-tag">view:deployments</span><span class="action-tag">view:jobs</span><span class="action-tag">view:pods</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clusters (1):</strong> stage-east
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="group-card">
+            <div class="group-header">
+                <h3>sre</h3>
+                <span class="badge badge-primary">1 clusters</span>
+            </div>
+            <div class="group-body">
+                <div class="group-details">
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> pod-exec, sre-admin
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s API Groups:</strong> , *
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Verbs:</strong> *, create
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Resources:</strong> *, pods/exec, pods/portforward
+                    </div>
+                    <div class="detail-row">
+                        <strong>Scope:</strong> cluster-wide
+                        <br><strong>Namespaces:</strong> * (cluster-wide)
+                    </div>
+                    <div class="detail-row">
+                        <strong>Komodor Actions (71):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">delete:Keda</span><span class="action-tag">delete:Kyverno</span><span class="action-tag">delete:cilium</span><span class="action-tag">delete:configmap</span><span class="action-tag">delete:cronjob</span><span class="action-tag">delete:custom-resource</span><span class="action-tag">delete:daemonset</span><span class="action-tag">delete:deployment</span><span class="action-tag">delete:ingress</span><span class="action-tag">delete:job</span><span class="action-tag">delete:namespace</span><span class="action-tag">delete:networkpolicy</span><span class="action-tag">delete:persistentvolume</span><span class="action-tag">delete:persistentvolumeclaim</span><span class="action-tag">delete:pod</span><span class="action-tag">delete:replicaset</span><span class="action-tag">delete:rollout</span><span class="action-tag">delete:secret</span><span class="action-tag">delete:service</span><span class="action-tag">delete:statefulset</span><span class="action-tag">delete:storageclass</span><span class="action-tag">edit:Keda</span><span class="action-tag">edit:Kyverno</span><span class="action-tag">edit:cilium</span><span class="action-tag">edit:configmap</span><span class="action-tag">edit:cronjob</span><span class="action-tag">edit:custom-resource</span><span class="action-tag">edit:daemonset</span><span class="action-tag">edit:deployment</span><span class="action-tag">edit:horizontalpodautoscaler</span><span class="action-tag">edit:job</span><span class="action-tag">edit:replicaset</span><span class="action-tag">edit:rollout</span><span class="action-tag">edit:secret</span><span class="action-tag">edit:service</span><span class="action-tag">edit:statefulset</span><span class="action-tag">view:Keda</span><span class="action-tag">view:Kyverno</span><span class="action-tag">view:all</span><span class="action-tag">view:audit</span><span class="action-tag">view:autoscalers</span><span class="action-tag">view:certmanager</span><span class="action-tag">view:cilium</span><span class="action-tag">view:clusterroles</span><span class="action-tag">view:clusterrolesbinding</span><span class="action-tag">view:configmaps</span><span class="action-tag">view:cost</span><span class="action-tag">view:cronjobs</span><span class="action-tag">view:custom-resource</span><span class="action-tag">view:customresourcedefinitions</span><span class="action-tag">view:daemonsets</span><span class="action-tag">view:deployments</span><span class="action-tag">view:externaldns</span><span class="action-tag">view:gpu</span><span class="action-tag">view:horizontalpodautoscalers</span><span class="action-tag">view:ingresses</span><span class="action-tag">view:jobs</span><span class="action-tag">view:namespaces</span><span class="action-tag">view:networkpolicies</span><span class="action-tag">view:nodecount</span><span class="action-tag">view:nodes</span><span class="action-tag">view:persistentvolumeclaims</span><span class="action-tag">view:persistentvolumes</span><span class="action-tag">view:pods</span><span class="action-tag">view:replicasets</span><span class="action-tag">view:rollouts</span><span class="action-tag">view:secrets</span><span class="action-tag">view:services</span><span class="action-tag">view:statefulsets</span><span class="action-tag">view:storageclasses</span><span class="action-tag">view:usage</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clusters (1):</strong> prod-east
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="group-card">
+            <div class="group-header">
+                <h3>system-masters</h3>
+                <span class="badge badge-primary">1 clusters</span>
+            </div>
+            <div class="group-body">
+                <div class="group-details">
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> cluster-admin
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s API Groups:</strong> *
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Verbs:</strong> *
+                    </div>
+                    <div class="detail-row">
+                        <strong>K8s Resources:</strong> *
+                    </div>
+                    <div class="detail-row">
+                        <strong>Scope:</strong> cluster-wide
+                        <br><strong>Namespaces:</strong> * (cluster-wide)
+                    </div>
+                    <div class="detail-row">
+                        <strong>Komodor Actions (71):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">delete:Keda</span><span class="action-tag">delete:Kyverno</span><span class="action-tag">delete:cilium</span><span class="action-tag">delete:configmap</span><span class="action-tag">delete:cronjob</span><span class="action-tag">delete:custom-resource</span><span class="action-tag">delete:daemonset</span><span class="action-tag">delete:deployment</span><span class="action-tag">delete:ingress</span><span class="action-tag">delete:job</span><span class="action-tag">delete:namespace</span><span class="action-tag">delete:networkpolicy</span><span class="action-tag">delete:persistentvolume</span><span class="action-tag">delete:persistentvolumeclaim</span><span class="action-tag">delete:pod</span><span class="action-tag">delete:replicaset</span><span class="action-tag">delete:rollout</span><span class="action-tag">delete:secret</span><span class="action-tag">delete:service</span><span class="action-tag">delete:statefulset</span><span class="action-tag">delete:storageclass</span><span class="action-tag">edit:Keda</span><span class="action-tag">edit:Kyverno</span><span class="action-tag">edit:cilium</span><span class="action-tag">edit:configmap</span><span class="action-tag">edit:cronjob</span><span class="action-tag">edit:custom-resource</span><span class="action-tag">edit:daemonset</span><span class="action-tag">edit:deployment</span><span class="action-tag">edit:horizontalpodautoscaler</span><span class="action-tag">edit:job</span><span class="action-tag">edit:replicaset</span><span class="action-tag">edit:rollout</span><span class="action-tag">edit:secret</span><span class="action-tag">edit:service</span><span class="action-tag">edit:statefulset</span><span class="action-tag">view:Keda</span><span class="action-tag">view:Kyverno</span><span class="action-tag">view:all</span><span class="action-tag">view:audit</span><span class="action-tag">view:autoscalers</span><span class="action-tag">view:certmanager</span><span class="action-tag">view:cilium</span><span class="action-tag">view:clusterroles</span><span class="action-tag">view:clusterrolesbinding</span><span class="action-tag">view:configmaps</span><span class="action-tag">view:cost</span><span class="action-tag">view:cronjobs</span><span class="action-tag">view:custom-resource</span><span class="action-tag">view:customresourcedefinitions</span><span class="action-tag">view:daemonsets</span><span class="action-tag">view:deployments</span><span class="action-tag">view:externaldns</span><span class="action-tag">view:gpu</span><span class="action-tag">view:horizontalpodautoscalers</span><span class="action-tag">view:ingresses</span><span class="action-tag">view:jobs</span><span class="action-tag">view:namespaces</span><span class="action-tag">view:networkpolicies</span><span class="action-tag">view:nodecount</span><span class="action-tag">view:nodes</span><span class="action-tag">view:persistentvolumeclaims</span><span class="action-tag">view:persistentvolumes</span><span class="action-tag">view:pods</span><span class="action-tag">view:replicasets</span><span class="action-tag">view:rollouts</span><span class="action-tag">view:secrets</span><span class="action-tag">view:services</span><span class="action-tag">view:statefulsets</span><span class="action-tag">view:storageclasses</span><span class="action-tag">view:usage</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clusters (1):</strong> prod-east
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 7: Policies to Create -->
+            <div id="tab-7" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Policies to Create</h2>
+            </div>
+            <div class="section-content">
+                <p style="margin-bottom: 1.5rem;">
+                    Complete list of 6 Komodor policies that need to be created:
+                </p>
+                
+            <div class="policy-card">
+                <div class="policy-header">
+                    <h3>k8s-sync-group-data-eng</h3>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="detail-row">
+                        <strong>Target Identity Group:</strong> data-eng
+                    </div>
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> data-pipeline-operator
+                    </div>
+                    <div class="detail-row">
+                        <strong>Actions (5):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">edit:job</span><span class="action-tag">rerun:job</span><span class="action-tag">view:cronjobs</span><span class="action-tag">view:jobs</span><span class="action-tag">view:pods</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Statements (1):</strong>
+                        <ul>
+                            <li><strong>Statement 1:</strong> 5 actions, cluster: prod-east, namespaces: data</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <h3>k8s-sync-group-payments-team</h3>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="detail-row">
+                        <strong>Target Identity Group:</strong> payments-team
+                    </div>
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> payments-deployer
+                    </div>
+                    <div class="detail-row">
+                        <strong>Actions (14):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">delete:configmap</span><span class="action-tag">delete:deployment</span><span class="action-tag">delete:service</span><span class="action-tag">edit:configmap</span><span class="action-tag">edit:deployment</span><span class="action-tag">edit:service</span><span class="action-tag">get:deployment</span><span class="action-tag">restart:deployment</span><span class="action-tag">rollback:deployment</span><span class="action-tag">scale:deployment</span><span class="action-tag">view:configmaps</span><span class="action-tag">view:deployments</span><span class="action-tag">view:pods</span><span class="action-tag">view:services</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Statements (1):</strong>
+                        <ul>
+                            <li><strong>Statement 1:</strong> 14 actions, cluster: prod-east, namespaces: payments</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <h3>k8s-sync-group-platform-eng</h3>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="detail-row">
+                        <strong>Target Identity Group:</strong> platform-eng
+                    </div>
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> platform-readonly
+                    </div>
+                    <div class="detail-row">
+                        <strong>Actions (14):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">get:daemonset</span><span class="action-tag">get:deployment</span><span class="action-tag">get:statefulset</span><span class="action-tag">view:configmaps</span><span class="action-tag">view:cronjobs</span><span class="action-tag">view:daemonsets</span><span class="action-tag">view:deployments</span><span class="action-tag">view:ingresses</span><span class="action-tag">view:jobs</span><span class="action-tag">view:namespaces</span><span class="action-tag">view:nodes</span><span class="action-tag">view:pods</span><span class="action-tag">view:services</span><span class="action-tag">view:statefulsets</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Statements (2):</strong>
+                        <ul>
+                            <li><strong>Statement 1:</strong> 12 actions, cluster: prod-east, namespaces: *</li><li><strong>Statement 2:</strong> 2 actions, cluster: prod-east, namespaces: </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <h3>k8s-sync-group-qa-team</h3>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="detail-row">
+                        <strong>Target Identity Group:</strong> qa-team
+                    </div>
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> qa-viewer
+                    </div>
+                    <div class="detail-row">
+                        <strong>Actions (4):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">get:deployment</span><span class="action-tag">view:deployments</span><span class="action-tag">view:jobs</span><span class="action-tag">view:pods</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Statements (1):</strong>
+                        <ul>
+                            <li><strong>Statement 1:</strong> 4 actions, cluster: stage-east, namespaces: qa</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <h3>k8s-sync-group-sre</h3>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="detail-row">
+                        <strong>Target Identity Group:</strong> sre
+                    </div>
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> pod-exec, sre-admin
+                    </div>
+                    <div class="detail-row">
+                        <strong>Actions (71):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">delete:Keda</span><span class="action-tag">delete:Kyverno</span><span class="action-tag">delete:cilium</span><span class="action-tag">delete:configmap</span><span class="action-tag">delete:cronjob</span><span class="action-tag">delete:custom-resource</span><span class="action-tag">delete:daemonset</span><span class="action-tag">delete:deployment</span><span class="action-tag">delete:ingress</span><span class="action-tag">delete:job</span><span class="action-tag">delete:namespace</span><span class="action-tag">delete:networkpolicy</span><span class="action-tag">delete:persistentvolume</span><span class="action-tag">delete:persistentvolumeclaim</span><span class="action-tag">delete:pod</span><span class="action-tag">delete:replicaset</span><span class="action-tag">delete:rollout</span><span class="action-tag">delete:secret</span><span class="action-tag">delete:service</span><span class="action-tag">delete:statefulset</span><span class="action-tag">delete:storageclass</span><span class="action-tag">edit:Keda</span><span class="action-tag">edit:Kyverno</span><span class="action-tag">edit:cilium</span><span class="action-tag">edit:configmap</span><span class="action-tag">edit:cronjob</span><span class="action-tag">edit:custom-resource</span><span class="action-tag">edit:daemonset</span><span class="action-tag">edit:deployment</span><span class="action-tag">edit:horizontalpodautoscaler</span><span class="action-tag">edit:job</span><span class="action-tag">edit:replicaset</span><span class="action-tag">edit:rollout</span><span class="action-tag">edit:secret</span><span class="action-tag">edit:service</span><span class="action-tag">edit:statefulset</span><span class="action-tag">view:Keda</span><span class="action-tag">view:Kyverno</span><span class="action-tag">view:all</span><span class="action-tag">view:audit</span><span class="action-tag">view:autoscalers</span><span class="action-tag">view:certmanager</span><span class="action-tag">view:cilium</span><span class="action-tag">view:clusterroles</span><span class="action-tag">view:clusterrolesbinding</span><span class="action-tag">view:configmaps</span><span class="action-tag">view:cost</span><span class="action-tag">view:cronjobs</span><span class="action-tag">view:custom-resource</span><span class="action-tag">view:customresourcedefinitions</span><span class="action-tag">view:daemonsets</span><span class="action-tag">view:deployments</span><span class="action-tag">view:externaldns</span><span class="action-tag">view:gpu</span><span class="action-tag">view:horizontalpodautoscalers</span><span class="action-tag">view:ingresses</span><span class="action-tag">view:jobs</span><span class="action-tag">view:namespaces</span><span class="action-tag">view:networkpolicies</span><span class="action-tag">view:nodecount</span><span class="action-tag">view:nodes</span><span class="action-tag">view:persistentvolumeclaims</span><span class="action-tag">view:persistentvolumes</span><span class="action-tag">view:pods</span><span class="action-tag">view:replicasets</span><span class="action-tag">view:rollouts</span><span class="action-tag">view:secrets</span><span class="action-tag">view:services</span><span class="action-tag">view:statefulsets</span><span class="action-tag">view:storageclasses</span><span class="action-tag">view:usage</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Statements (3):</strong>
+                        <ul>
+                            <li><strong>Statement 1:</strong> 54 actions, cluster: prod-east, namespaces: *</li><li><strong>Statement 2:</strong> 14 actions, cluster: prod-east, namespaces: </li><li><strong>Statement 3:</strong> 3 actions, cluster: *, namespaces: *</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                <div class="policy-header">
+                    <h3>k8s-sync-group-system-masters</h3>
+                    <span class="badge badge-success">NEW</span>
+                </div>
+                <div class="policy-body">
+                    <div class="detail-row">
+                        <strong>Target Identity Group:</strong> system-masters
+                    </div>
+                    <div class="detail-row">
+                        <strong>Source K8s Roles:</strong> cluster-admin
+                    </div>
+                    <div class="detail-row">
+                        <strong>Actions (71):</strong>
+                        <div class="action-list">
+                            <span class="action-tag">delete:Keda</span><span class="action-tag">delete:Kyverno</span><span class="action-tag">delete:cilium</span><span class="action-tag">delete:configmap</span><span class="action-tag">delete:cronjob</span><span class="action-tag">delete:custom-resource</span><span class="action-tag">delete:daemonset</span><span class="action-tag">delete:deployment</span><span class="action-tag">delete:ingress</span><span class="action-tag">delete:job</span><span class="action-tag">delete:namespace</span><span class="action-tag">delete:networkpolicy</span><span class="action-tag">delete:persistentvolume</span><span class="action-tag">delete:persistentvolumeclaim</span><span class="action-tag">delete:pod</span><span class="action-tag">delete:replicaset</span><span class="action-tag">delete:rollout</span><span class="action-tag">delete:secret</span><span class="action-tag">delete:service</span><span class="action-tag">delete:statefulset</span><span class="action-tag">delete:storageclass</span><span class="action-tag">edit:Keda</span><span class="action-tag">edit:Kyverno</span><span class="action-tag">edit:cilium</span><span class="action-tag">edit:configmap</span><span class="action-tag">edit:cronjob</span><span class="action-tag">edit:custom-resource</span><span class="action-tag">edit:daemonset</span><span class="action-tag">edit:deployment</span><span class="action-tag">edit:horizontalpodautoscaler</span><span class="action-tag">edit:job</span><span class="action-tag">edit:replicaset</span><span class="action-tag">edit:rollout</span><span class="action-tag">edit:secret</span><span class="action-tag">edit:service</span><span class="action-tag">edit:statefulset</span><span class="action-tag">view:Keda</span><span class="action-tag">view:Kyverno</span><span class="action-tag">view:all</span><span class="action-tag">view:audit</span><span class="action-tag">view:autoscalers</span><span class="action-tag">view:certmanager</span><span class="action-tag">view:cilium</span><span class="action-tag">view:clusterroles</span><span class="action-tag">view:clusterrolesbinding</span><span class="action-tag">view:configmaps</span><span class="action-tag">view:cost</span><span class="action-tag">view:cronjobs</span><span class="action-tag">view:custom-resource</span><span class="action-tag">view:customresourcedefinitions</span><span class="action-tag">view:daemonsets</span><span class="action-tag">view:deployments</span><span class="action-tag">view:externaldns</span><span class="action-tag">view:gpu</span><span class="action-tag">view:horizontalpodautoscalers</span><span class="action-tag">view:ingresses</span><span class="action-tag">view:jobs</span><span class="action-tag">view:namespaces</span><span class="action-tag">view:networkpolicies</span><span class="action-tag">view:nodecount</span><span class="action-tag">view:nodes</span><span class="action-tag">view:persistentvolumeclaims</span><span class="action-tag">view:persistentvolumes</span><span class="action-tag">view:pods</span><span class="action-tag">view:replicasets</span><span class="action-tag">view:rollouts</span><span class="action-tag">view:secrets</span><span class="action-tag">view:services</span><span class="action-tag">view:statefulsets</span><span class="action-tag">view:storageclasses</span><span class="action-tag">view:usage</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Statements (3):</strong>
+                        <ul>
+                            <li><strong>Statement 1:</strong> 54 actions, cluster: prod-east, namespaces: *</li><li><strong>Statement 2:</strong> 14 actions, cluster: prod-east, namespaces: </li><li><strong>Statement 3:</strong> 3 actions, cluster: *, namespaces: *</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 8: Complete K8s RBAC Resources -->
+            <div id="tab-8" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Complete K8s RBAC Resources</h2>
+            </div>
+            <div class="section-content">
+                <p style="margin-bottom: 1.5rem;">
+                    Complete breakdown of all ClusterRoles, ClusterRoleBindings, Roles, RoleBindings, and ServiceAccounts across all clusters:
+                </p>
+                <p>Raw RBAC data not available. Run with --data-dir option.</p>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 9: Permission Gaps -->
+            <div id="tab-9" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Permission Gaps Analysis</h2>
+            </div>
+            <div class="section-content">
+                <h3 style="margin-bottom: 1rem;">Actions in K8s RBAC but NOT in Komodor (78)</h3>
+                <p style="margin-bottom: 0.75rem; color: var(--gray-600);">
+                    These K8s permissions exist but haven't been enabled in Komodor yet:
+                </p>
+                <div class="action-list" style="margin-bottom: 2rem;">
+                    <span class="action-tag add">delete:Keda</span><span class="action-tag add">delete:Kyverno</span><span class="action-tag add">delete:cilium</span><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:cronjob</span><span class="action-tag add">delete:custom-resource</span><span class="action-tag add">delete:daemonset</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:ingress</span><span class="action-tag add">delete:job</span><span class="action-tag add">delete:namespace</span><span class="action-tag add">delete:networkpolicy</span><span class="action-tag add">delete:persistentvolume</span><span class="action-tag add">delete:persistentvolumeclaim</span><span class="action-tag add">delete:pod</span><span class="action-tag add">delete:replicaset</span><span class="action-tag add">delete:rollout</span><span class="action-tag add">delete:secret</span><span class="action-tag add">delete:service</span><span class="action-tag add">delete:statefulset</span><span class="action-tag add">delete:storageclass</span><span class="action-tag add">edit:Keda</span><span class="action-tag add">edit:Kyverno</span><span class="action-tag add">edit:cilium</span><span class="action-tag add">edit:configmap</span><span class="action-tag add">edit:cronjob</span><span class="action-tag add">edit:custom-resource</span><span class="action-tag add">edit:daemonset</span><span class="action-tag add">edit:deployment</span><span class="action-tag add">edit:horizontalpodautoscaler</span><span class="action-tag add">edit:job</span><span class="action-tag add">edit:replicaset</span><span class="action-tag add">edit:rollout</span><span class="action-tag add">edit:secret</span><span class="action-tag add">edit:service</span><span class="action-tag add">edit:statefulset</span><span class="action-tag add">get:daemonset</span><span class="action-tag add">get:deployment</span><span class="action-tag add">get:statefulset</span><span class="action-tag add">rerun:job</span><span class="action-tag add">restart:deployment</span><span class="action-tag add">rollback:deployment</span><span class="action-tag add">scale:deployment</span><span class="action-tag add">view:Keda</span><span class="action-tag add">view:Kyverno</span><span class="action-tag add">view:all</span><span class="action-tag add">view:audit</span><span class="action-tag add">view:autoscalers</span><span class="action-tag add">view:certmanager</span><span class="action-tag add">view:cilium</span><span class="action-tag add">view:clusterroles</span><span class="action-tag add">view:clusterrolesbinding</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:cost</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:custom-resource</span><span class="action-tag add">view:customresourcedefinitions</span><span class="action-tag add">view:daemonsets</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:externaldns</span><span class="action-tag add">view:gpu</span><span class="action-tag add">view:horizontalpodautoscalers</span><span class="action-tag add">view:ingresses</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:namespaces</span><span class="action-tag add">view:networkpolicies</span><span class="action-tag add">view:nodecount</span><span class="action-tag add">view:nodes</span><span class="action-tag add">view:persistentvolumeclaims</span><span class="action-tag add">view:persistentvolumes</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:replicasets</span><span class="action-tag add">view:rollouts</span><span class="action-tag add">view:secrets</span><span class="action-tag add">view:services</span><span class="action-tag add">view:statefulsets</span><span class="action-tag add">view:storageclasses</span><span class="action-tag add">view:usage</span>
+                </div>
+                
+                <h3 style="margin-bottom: 1rem;">Actions in Komodor but NOT in K8s RBAC (0)</h3>
+                <p style="margin-bottom: 0.75rem; color: var(--gray-600);">
+                    These Komodor-specific actions don't have direct K8s RBAC equivalents:
+                </p>
+                <div class="action-list" style="margin-bottom: 2rem;">
+                    
+                </div>
+                
+                <div class="highlight-box warning">
+                    <h3>Decision Required</h3>
+                    <p>
+                        Komodor-specific actions (like <code>exec:pod</code>, <code>manage:users</code>, <code>manage:klaudia</code>, 
+                        Helm actions) need to be manually added to policies based on business requirements. 
+                        These don't exist in K8s RBAC, so the account owner needs to decide which groups should have these capabilities.
+                    </p>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 10: Implementation Roadmap -->
+            <div id="tab-10" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Implementation Roadmap</h2>
+            </div>
+            <div class="section-content">
+                <div class="roadmap-phase">
+                    <h4>Phase 1: Create 6 Komodor Policies (Immediate - 1-2 hours)</h4>
+                    <ul>
+                        <li>Import the 6 generated policy JSON files into Komodor</li>
+                        <li>Options: Use Komodor API (<code>apply_komodor_policies.py</code>) or manual UI import</li>
+                        <li>Each policy maps to one identity group with matching K8s permissions</li>
+                    </ul>
+                </div>
+                
+                <div class="roadmap-phase">
+                    <h4>Phase 2: Create Roles and Configure IdP SAML Mapping (Same Day - 1 hour)</h4>
+                    <ul>
+                        <li><strong>Step 2a:</strong> Create 6 Komodor roles using <code>apply_komodor_policies.py --include-roles</code></li>
+                        <li>Roles are already generated by <code>generate_komodor_policies.py</code> and included in <code>all_policies.json</code></li>
+                        <li><strong>Step 2b:</strong> Configure the IdP (e.g., Okta) to pass the <code>komodorRoles</code> attribute in SAML assertions</li>
+                        <li>In the IdP: Add SAML 2.0 attribute mapping with the generated role names (e.g., "k8s-sync-&lt;group-name&gt;")</li>
+                        <li>When users log in via SSO, they automatically get assigned roles based on their group membership</li>
+                        <li><strong>Note:</strong> Komodor does not have a UI for group-to-role mapping; this is done via IdP SAML attributes</li>
+                    </ul>
+                </div>
+                
+                <div class="roadmap-phase">
+                    <h4>Phase 3: Add Komodor-Specific Actions (Decision Required - Timing TBD)</h4>
+                    <ul>
+                        <li>Identify which groups need <code>exec:pod</code> (shell into pods)</li>
+                        <li>Identify which groups need Helm actions (install/uninstall charts)</li>
+                        <li>Identify which groups need <code>manage:*</code> actions (admin capabilities)</li>
+                        <li>Manually update policies to add these actions</li>
+                    </ul>
+                </div>
+                
+                <div class="roadmap-phase">
+                    <h4>Phase 4: Validation (Next Day - 2-3 hours)</h4>
+                    <ul>
+                        <li>Test with sample users from each identity group</li>
+                        <li>Verify Komodor permissions match K8s RBAC expectations</li>
+                        <li>Adjust policies as needed based on feedback</li>
+                        <li>Document any exceptions or special cases</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 11: Remaining Gaps -->
+            <div id="tab-11" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Remaining Gaps and Limitations</h2>
+            </div>
+            <div class="section-content">
+                <div class="highlight-box warning">
+                    <h3>No Automatic Sync Capability</h3>
+                    <p>
+                        Currently, this is a one-time analysis. If K8s RBAC changes (new groups, modified permissions), 
+                        the pipeline must be re-run manually. A future product feature could provide continuous automatic sync.
+                    </p>
+                </div>
+                
+                <div class="highlight-box info">
+                    <h3>Komodor-Specific Actions Require Manual Decision</h3>
+                    <p>
+                        Actions like <code>exec:pod</code>, <code>manage:klaudia</code>, Helm management, and user administration 
+                        don't have K8s RBAC equivalents. These must be manually added to policies based on business requirements.
+                    </p>
+                </div>
+                
+                <div class="highlight-box info">
+                    <h3>ServiceAccount Permissions Not Mapped</h3>
+                    <p>
+                        ServiceAccount bindings were analyzed but not included in policy generation, as they represent 
+                        machine identities rather than human user access.
+                    </p>
+                </div>
+                
+                <div class="highlight-box info">
+                    <h3>Custom Resources May Have Limited Support</h3>
+                    <p>
+                        Some Kubernetes Custom Resource Definitions (CRDs) may not have direct Komodor action equivalents. 
+                        These are mapped to <code>view:custom-resource</code> or <code>edit:custom-resource</code> where possible.
+                    </p>
+                </div>
+                
+                <div class="highlight-box warning">
+                    <h3>Pod Subresources Are Not Auto-Mapped</h3>
+                    <p>
+                        K8s grants exec, port-forward, log access, and scale via subresources (e.g., <code>pods/exec</code>, 
+                        <code>deployments/scale</code>). The mapper matches base resources only, so actions like 
+                        <code>exec:pod</code> and <code>forward:port</code> are never granted automatically and must be 
+                        added to policies manually where appropriate.
+                    </p>
+                </div>
+                
+                <div class="highlight-box warning">
+                    <h3>Rule Granularity Caveats</h3>
+                    <p>
+                        <code>resourceNames</code> restrictions in K8s rules are not carried over (the generated grant covers the 
+                        whole resource type in scope), and wildcard rules (<code>resources: ["*"]</code>) map to the full set of 
+                        Komodor view/edit/delete actions, including some platform-level view actions. Review generated policies 
+                        before applying.
+                    </p>
+                </div>
+            </div>
+        </div>
+            </div>
+            
+            <!-- Tab 12: Appendix -->
+            <div id="tab-12" class="tab-content">
+        <div class="section">
+            <div class="section-header">
+                <h2>Appendix</h2>
+            </div>
+            <div class="section-content">
+                <h3 style="margin-bottom: 1rem;">Generated Files</h3>
+                <ul style="margin-bottom: 1.5rem;">
+                    <li><strong>Policy JSON Files:</strong> <code>generated_policies/&lt;account&gt;/2026-08-11_09-40_*/all_policies.json</code></li>
+                    <li><strong>Per-Cluster Reports:</strong> <code>reports/&lt;account&gt;/comparison_2026-08-11_09-40_*/rbac_sync_report.html</code></li>
+                    <li><strong>Full Account Summary:</strong> <code>reports/&lt;account&gt;/full_account_summary_2026-08-11_09-40.json</code></li>
+                </ul>
+                
+                <h3 style="margin-bottom: 1rem;">Scripts Used</h3>
+                <ul style="margin-bottom: 1.5rem;">
+                    <li><code>fetch_rbac.py</code> - Fetches K8s RBAC from clusters via ATM</li>
+                    <li><code>analyze_k8s_rbac.py</code> - Parses and analyzes RBAC structure</li>
+                    <li><code>map_to_komodor.py</code> - Maps K8s permissions to Komodor actions</li>
+                    <li><code>generate_komodor_policies.py</code> - Generates Komodor policy JSON</li>
+                    <li><code>compare_and_report.py</code> - Compares with existing Komodor config</li>
+                    <li><code>apply_komodor_policies.py</code> - Applies policies via Komodor API</li>
+                </ul>
+                
+                <h3 style="margin-bottom: 1rem;">K8s to Komodor Action Mapping</h3>
+                <p>
+                    K8s verbs map to Komodor actions as follows:
+                </p>
+                <ul>
+                    <li><code>get, list, watch</code> → <code>view:*</code> actions</li>
+                    <li><code>create, update, patch</code> → <code>edit:*</code> actions (plus restart/rollback/scale for workloads)</li>
+                    <li><code>delete</code> → <code>delete:*</code> actions</li>
+                    <li>Pod subresources (<code>pods/exec</code>, <code>pods/portforward</code>) are <strong>not</strong> auto-mapped — grant <code>exec:pod</code> / <code>forward:port</code> manually where needed</li>
+                </ul>
+            </div>
+        </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>
+                Generated by Komodor RBAC Sync Pipeline | Komodor Solutions Engineering<br>
+                Report Date: 2026-08-11 09:42:53 | Analysis ID: 2026-08-11_09-40
+            </p>
+        </footer>
+    </div>
+    
+    <script>
+        // Tab switching function
+        function switchTab(tabId, button) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            
+            // Add active class to clicked button
+            if (button) {
+                button.classList.add('active');
+            }
+        }
+        
+        // Expand/collapse function
+        function toggleExpand(btn, contentId) {
+            const content = document.getElementById(contentId);
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                btn.textContent = btn.textContent.replace('Show', 'Hide');
+            } else {
+                content.style.display = 'none';
+                btn.textContent = btn.textContent.replace('Hide', 'Show');
+            }
+        }
+        
+        // Toggle cluster report expand/collapse
+        function toggleClusterReport(clusterNameSafe) {
+            const expandableRow = document.getElementById('expandable-' + clusterNameSafe);
+            const button = document.getElementById('btn-' + clusterNameSafe);
+            
+            if (expandableRow.style.display === 'none' || expandableRow.style.display === '') {
+                expandableRow.style.display = 'table-row';
+                button.textContent = 'Collapse';
+                button.classList.add('expanded');
+            } else {
+                expandableRow.style.display = 'none';
+                button.textContent = 'Expand';
+                button.classList.remove('expanded');
+            }
+        }
+        
+        // Legacy collapsible support
+        document.querySelectorAll('.collapsible').forEach(el => {
+            el.addEventListener('click', () => {
+                el.classList.toggle('expanded');
+                const content = el.nextElementSibling;
+                if (content && content.classList.contains('collapse-content')) {
+                    content.classList.toggle('show');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+# Komodor Reverse RBAC Sync — in-cluster scheduled sync
+#
+# Install per cluster:
+#   1. Build and push the image (see Dockerfile), set it below.
+#   2. Set CLUSTER_NAME to this cluster's name as it appears in Komodor.
+#   3. kubectl create namespace komodor-rbac-sync
+#   4. kubectl -n komodor-rbac-sync create secret generic komodor-api-key \
+#        --from-literal=apiKey=<your-komodor-api-key>
+#   5. kubectl apply -f rbac-sync-cronjob.yaml
+#
+# First runs are DRY RUNS (no --apply). Watch a few job logs, then add
+# --apply (and later --prune) to the args list below.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rbac-sync
+  namespace: komodor-rbac-sync
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: komodor-rbac-sync-reader
+rules:
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: komodor-rbac-sync-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: komodor-rbac-sync-reader
+subjects:
+  - kind: ServiceAccount
+    name: rbac-sync
+    namespace: komodor-rbac-sync
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: komodor-rbac-sync
+  namespace: komodor-rbac-sync
+spec:
+  schedule: "*/10 * * * *"   # every 10 minutes; consider hourly + GitOps trigger instead
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 900
+      template:
+        spec:
+          serviceAccountName: rbac-sync
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+          containers:
+            - name: rbac-sync
+              image: REPLACE_ME/komodor-rbac-sync:latest
+              args:
+                - "--account"
+                - "REPLACE_ME_ACCOUNT"
+                - "--in-cluster"
+                - "--cluster-name"
+                - "$(CLUSTER_NAME)"
+                # Start in dry-run. After validating logs, append:
+                #   - "--apply"
+                # and once stable for a while, optionally:
+                #   - "--prune"
+              env:
+                - name: CLUSTER_NAME
+                  value: "REPLACE_ME_CLUSTER"   # must match the cluster name in Komodor
+                - name: KOMODOR_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: komodor-api-key
+                      key: apiKey
+                - name: RBAC_SYNC_WORKDIR
+                  value: /tmp/rbac-sync
+              volumeMounts:
+                - name: workdir
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+          volumes:
+            - name: workdir
+              emptyDir: {}

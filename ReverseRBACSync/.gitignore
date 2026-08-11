@@ -1,0 +1,20 @@
+# Credentials — never commit keys
+*.key
+*api_key*
+.env
+
+# Customer RBAC exports and generated output — sensitive, stays local
+data/
+reports/
+generated_policies/
+sync_workspace/
+*.b64
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store

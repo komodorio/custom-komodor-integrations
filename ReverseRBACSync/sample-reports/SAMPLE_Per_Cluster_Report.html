@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Komodor RBAC Sync Report</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+        }
+        
+        header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header .subtitle {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .summary-card .label {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            margin-bottom: 0.25rem;
+        }
+        
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .summary-card.success .value { color: var(--success); }
+        .summary-card.warning .value { color: var(--warning); }
+        .summary-card.danger .value { color: var(--danger); }
+        .summary-card.primary .value { color: var(--primary); }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: var(--gray-100);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .badge-success { background: #dcfce7; color: var(--success); }
+        .badge-warning { background: #fef3c7; color: var(--warning); }
+        .badge-danger { background: #fee2e2; color: var(--danger); }
+        .badge-primary { background: #dbeafe; color: var(--primary); }
+        
+        .section-content {
+            padding: 1.5rem;
+        }
+        
+        .policy-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        
+        .policy-card:last-child {
+            margin-bottom: 0;
+        }
+        
+        .policy-header {
+            background: var(--gray-50);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .policy-body {
+            padding: 1rem;
+        }
+        
+        .action-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .action-tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--gray-100);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+        
+        .action-tag.add {
+            background: #dcfce7;
+            color: var(--success);
+        }
+        
+        .action-tag.remove {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+        
+        .diff-section {
+            margin-top: 1rem;
+        }
+        
+        .diff-section h4 {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+        }
+        
+        .recommendations {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+        }
+        
+        .recommendations h3 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+        
+        .recommendations ol {
+            margin-left: 1.25rem;
+        }
+        
+        .recommendations li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .collapsible {
+            cursor: pointer;
+        }
+        
+        .collapsible::after {
+            content: " [+]";
+            font-size: 0.85em;
+            color: var(--gray-600);
+        }
+        
+        .collapsible.expanded::after {
+            content: " [-]";
+        }
+        
+        .collapse-content {
+            display: none;
+        }
+        
+        .collapse-content.show {
+            display: block;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-600);
+        }
+        
+        .timestamp {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Komodor RBAC Sync Report</h1>
+            <p class="subtitle">Kubernetes RBAC to Komodor Policy Comparison</p>
+            <p class="timestamp">Generated: 2026-08-11 09:40:31</p>
+        </header>
+        
+        <div class="summary-grid">
+            <div class="summary-card primary">
+                <div class="label">K8s Policies Generated</div>
+                <div class="value">5</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Existing Komodor Policies</div>
+                <div class="value">0</div>
+            </div>
+            <div class="summary-card success">
+                <div class="label">New to Create</div>
+                <div class="value">5</div>
+            </div>
+            <div class="summary-card warning">
+                <div class="label">Need Updates</div>
+                <div class="value">0</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <h2>Recommendations</h2>
+            </div>
+            <div class="section-content recommendations">
+                <ol>
+                    <li><strong>Create 5 new policies</strong> to match K8s RBAC groups. Use the generated policy files or the apply script.</li>
+<li>Run <code>python apply_komodor_policies.py</code> to apply the changes via API.</li>
+                </ol>
+            </div>
+        </div>
+        
+        
+    <div class="section">
+        <div class="section-header">
+            <h2>New Policies to Create</h2>
+            <span class="badge badge-success">5</span>
+        </div>
+        <div class="section-content">
+            
+        <div class="policy-card">
+            <div class="policy-header">
+                <span>k8s-sync-group-data-eng</span>
+                <span class="badge badge-success">NEW</span>
+            </div>
+            <div class="policy-body">
+                <div class="action-list"><span class="action-tag add">edit:job</span><span class="action-tag add">rerun:job</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:pods</span></div>
+            </div>
+        </div>
+        
+        <div class="policy-card">
+            <div class="policy-header">
+                <span>k8s-sync-group-payments-team</span>
+                <span class="badge badge-success">NEW</span>
+            </div>
+            <div class="policy-body">
+                <div class="action-list"><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:service</span><span class="action-tag add">edit:configmap</span><span class="action-tag add">edit:deployment</span><span class="action-tag add">edit:service</span><span class="action-tag add">get:deployment</span><span class="action-tag add">restart:deployment</span><span class="action-tag add">rollback:deployment</span><span class="action-tag add">scale:deployment</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:services</span></div>
+            </div>
+        </div>
+        
+        <div class="policy-card">
+            <div class="policy-header">
+                <span>k8s-sync-group-platform-eng</span>
+                <span class="badge badge-success">NEW</span>
+            </div>
+            <div class="policy-body">
+                <div class="action-list"><span class="action-tag add">get:daemonset</span><span class="action-tag add">get:deployment</span><span class="action-tag add">get:statefulset</span><span class="action-tag add">view:configmaps</span><span class="action-tag add">view:cronjobs</span><span class="action-tag add">view:daemonsets</span><span class="action-tag add">view:deployments</span><span class="action-tag add">view:ingresses</span><span class="action-tag add">view:jobs</span><span class="action-tag add">view:namespaces</span><span class="action-tag add">view:nodes</span><span class="action-tag add">view:pods</span><span class="action-tag add">view:services</span><span class="action-tag add">view:statefulsets</span></div>
+            </div>
+        </div>
+        
+        <div class="policy-card">
+            <div class="policy-header">
+                <span>k8s-sync-group-sre</span>
+                <span class="badge badge-success">NEW</span>
+            </div>
+            <div class="policy-body">
+                <div class="action-list"><span class="action-tag add">delete:Keda</span><span class="action-tag add">delete:Kyverno</span><span class="action-tag add">delete:cilium</span><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:cronjob</span><span class="action-tag add">delete:custom-resource</span><span class="action-tag add">delete:daemonset</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:ingress</span><span class="action-tag add">delete:job</span><span class="action-tag add">delete:namespace</span><span class="action-tag add">delete:networkpolicy</span><span class="action-tag add">delete:persistentvolume</span><span class="action-tag add">delete:persistentvolumeclaim</span><span class="action-tag add">delete:pod</span><span class="action-tag">+56 more</span></div>
+            </div>
+        </div>
+        
+        <div class="policy-card">
+            <div class="policy-header">
+                <span>k8s-sync-group-system-masters</span>
+                <span class="badge badge-success">NEW</span>
+            </div>
+            <div class="policy-body">
+                <div class="action-list"><span class="action-tag add">delete:Keda</span><span class="action-tag add">delete:Kyverno</span><span class="action-tag add">delete:cilium</span><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:cronjob</span><span class="action-tag add">delete:custom-resource</span><span class="action-tag add">delete:daemonset</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:ingress</span><span class="action-tag add">delete:job</span><span class="action-tag add">delete:namespace</span><span class="action-tag add">delete:networkpolicy</span><span class="action-tag add">delete:persistentvolume</span><span class="action-tag add">delete:persistentvolumeclaim</span><span class="action-tag add">delete:pod</span><span class="action-tag">+56 more</span></div>
+            </div>
+        </div>
+        
+            
+        </div>
+    </div>
+    
+        
+        
+        <div class="section">
+            <div class="section-header">
+                <h2>Policies Needing Updates</h2>
+                <span class="badge badge-warning">0</span>
+            </div>
+            <div class="section-content empty-state">
+                No existing policies need updates.
+            </div>
+        </div>
+        
+        
+        
+    <div class="section">
+        <div class="section-header">
+            <h2>Action Coverage Differences</h2>
+        </div>
+        <div class="section-content">
+            <div class="diff-section">
+                <h4 class="collapsible">Actions in K8s RBAC, not in Komodor (78)</h4>
+                <div class="collapse-content">
+                    <div class="action-list" style="margin-top: 0.5rem;"><span class="action-tag add">delete:Keda</span><span class="action-tag add">delete:Kyverno</span><span class="action-tag add">delete:cilium</span><span class="action-tag add">delete:configmap</span><span class="action-tag add">delete:cronjob</span><span class="action-tag add">delete:custom-resource</span><span class="action-tag add">delete:daemonset</span><span class="action-tag add">delete:deployment</span><span class="action-tag add">delete:ingress</span><span class="action-tag add">delete:job</span><span class="action-tag add">delete:namespace</span><span class="action-tag add">delete:networkpolicy</span><span class="action-tag add">delete:persistentvolume</span><span class="action-tag add">delete:persistentvolumeclaim</span><span class="action-tag add">delete:pod</span><span class="action-tag add">delete:replicaset</span><span class="action-tag add">delete:rollout</span><span class="action-tag add">delete:secret</span><span class="action-tag add">delete:service</span><span class="action-tag add">delete:statefulset</span><span class="action-tag">+58 more</span></div>
+                </div>
+            </div>
+            <div class="diff-section" style="margin-top: 1.5rem;">
+                <h4 class="collapsible">Actions in Komodor, not in K8s RBAC (0)</h4>
+                <div class="collapse-content">
+                    <div class="action-list" style="margin-top: 0.5rem;"><span class="empty-state">None</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+        
+        
+    </div>
+    
+    <script>
+        document.querySelectorAll('.collapsible').forEach(el => {
+            el.addEventListener('click', () => {
+                el.classList.toggle('expanded');
+                const content = el.nextElementSibling;
+                if (content && content.classList.contains('collapse-content')) {
+                    content.classList.toggle('show');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
